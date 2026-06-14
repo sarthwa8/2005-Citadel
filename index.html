@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Citadel System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles/main.css" />
+</head>
+<body>
+
+  <!-- ── In-flight HUD ───────────────────────────────────────────────── -->
+  <div id="hud">
+    <div id="hud-top-left">
+      <div class="hud-panel minimap-frame">
+        <div class="hud-label">SYSTEM MAP</div>
+        <canvas id="minimap"></canvas>
+      </div>
+    </div>
+
+    <div id="hud-top-right">
+      <div class="hud-panel" id="discovery-log">
+        <div class="hud-label">DISCOVERY LOG</div>
+        <div id="log-entries"></div>
+      </div>
+    </div>
+
+    <div id="scan-prompt"><kbd>E</kbd><span>SCAN <b class="scan-target"></b></span></div>
+  </div>
+
+  <!-- ── Scan dossier (Mass Effect style) ────────────────────────────── -->
+  <div id="info-panel" class="hidden">
+    <div id="panel-designation"></div>
+    <div id="panel-tab"><span id="panel-badge"></span></div>
+    <div id="panel-body"></div>
+    <div id="panel-footer"><span class="footer-dot"></span> SCAN COMPLETE · <span id="panel-timestamp"></span></div>
+    <button id="panel-close">CLOSE</button>
+  </div>
+
+  <!-- ── Landing ─────────────────────────────────────────────────────── -->
+  <div id="landing">
+    <canvas id="galaxy-canvas"></canvas>
+    <div id="landing-vignette"></div>
+    <div id="landing-content">
+      <h1 id="landing-title">THE CITADEL SYSTEM</h1>
+      <p class="landing-tagline">An interactive star-system portfolio</p>
+      <div class="landing-controls">
+        <span><kbd>DRAG</kbd> orbit</span>
+        <span><kbd>CLICK</kbd> travel</span>
+        <span><kbd>TAB</kbd> pilot</span>
+        <span><kbd>WASD</kbd> fly</span>
+        <span><kbd>E</kbd> scan</span>
+      </div>
+      <button id="enter-btn"><span>ENTER</span></button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
