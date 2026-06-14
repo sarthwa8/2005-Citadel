@@ -1,16 +1,41 @@
 import * as THREE from 'three'
 import { gsap } from 'gsap'
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js'
-import atmosphereVert from '../shaders/atmosphere.vert.glsl?raw'
-import atmosphereFrag from '../shaders/atmosphere.frag.glsl?raw'
 import { Moon } from './Moon.js'
+import { makeGlowSprite } from '../core/glow.js'
 
 const textureLoader = new THREE.TextureLoader()
 
-// Global dampener for the atmosphere rim. The per-planet atmosphereIntensity values
-// were tuned bright (they bloomed into star-like halos); this pulls them back to a
-// subtle limb glow while keeping each planet's relative strength.
-const ATMOSPHERE_SCALE = 0.45
+// Peak opacity of a planet's soft glow halo, scaled by its atmosphereIntensity.
+const HALO_OPACITY = 0.55
+const HALO_SIZE    = 3.2   // halo sprite size = planet radius × this
+
+// 1-D ring texture: a tinted strip that fades to transparent at both edges with
+// faint banding, mapped radially across the ring disc (inner edge → outer edge).
+function makeRingTexture(color) {
+  const w = 512, h = 4
+  const c = document.createElement('canvas')
+  c.width = w; c.height = h
+  const ctx = c.getContext('2d')
+  const col = new THREE.Color(color)
+  const r = Math.round(col.r * 255), g = Math.round(col.g * 255), b = Math.round(col.b * 255)
+  const img = ctx.createImageData(w, h)
+  for (let x = 0; x < w; x++) {
+    const u = x / (w - 1)
+    let a = Math.pow(Math.sin(Math.PI * u), 0.8)                      // soft fade at both edges
+    a *= 0.72 + 0.28 * Math.sin(u * 58.0) * Math.sin(u * 21.0)        // subtle bands
+    a = Math.max(0, Math.min(1, a)) * 0.9
+    for (let y = 0; y < h; y++) {
+      const i = (y * w + x) * 4
+      img.data[i] = r; img.data[i + 1] = g; img.data[i + 2] = b
+      img.data[i + 3] = Math.round(a * 255)
+    }
+  }
+  ctx.putImageData(img, 0, 0)
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
 
 export class Planet {
   constructor(config) {
@@ -57,42 +82,33 @@ export class Planet {
     this.mesh = new THREE.Mesh(geo, mat)
     this.planetGroup.add(this.mesh)
 
-    // ── Atmosphere rim shader ───────────────────────────────────────────────
-    const atmGeo = new THREE.SphereGeometry(config.radius * 1.12, 64, 64)
-    this.atmMat = new THREE.ShaderMaterial({
-      uniforms: {
-        atmosphereColor:     { value: config.atmosphereColor },
-        atmosphereIntensity: { value: (config.atmosphereIntensity ?? 0.8) * ATMOSPHERE_SCALE },
-        emissiveBoost:       { value: 0.0 },
-      },
-      vertexShader:   atmosphereVert,
-      fragmentShader: atmosphereFrag,
-      transparent:    true,
-      depthWrite:     false,
-      blending:       THREE.AdditiveBlending,
-      side:           THREE.FrontSide,
-    })
-    this.atmosphereMesh = new THREE.Mesh(atmGeo, this.atmMat)
-    this.planetGroup.add(this.atmosphereMesh)
+    // ── Atmospheric glow — soft camera-facing halo that diffuses into space ──
+    // Replaces the old fresnel rim shader, which read as a hard ring at the limb.
+    this._haloBase = (config.atmosphereIntensity ?? 0.8) * HALO_OPACITY
+    this.halo = makeGlowSprite(config.atmosphereColor, config.radius * HALO_SIZE, this._haloBase)
+    this.planetGroup.add(this.halo)
 
-    // ── Ring (SYNTHEX only) ────────────────────────────────────────────────────
+    // ── Ring (SYNTHEX only) — banded disc that fades softly at both edges ──────
     if (config.hasRing) {
-      const ringGeo = new THREE.RingGeometry(config.radius * 1.4, config.radius * 2.2, 128)
-      // RingGeometry UVs are 0..1 across the quad; remap so the texture/gradient
-      // runs radially (inner edge = 0, outer edge = 1) instead of across the strip.
+      const innerR = config.radius * 1.4
+      const outerR = config.radius * 2.4
+      const ringGeo = new THREE.RingGeometry(innerR, outerR, 160, 1)
+      // Remap UV.x to the true radial position (0 = inner edge → 1 = outer edge)
+      // so a 1-D ring texture lays bands + edge fades across the disc.
       const pos = ringGeo.attributes.position
       const uv  = ringGeo.attributes.uv
       const v3  = new THREE.Vector3()
       for (let i = 0; i < pos.count; i++) {
         v3.fromBufferAttribute(pos, i)
-        uv.setXY(i, v3.length() < config.radius * 1.8 ? 0 : 1, 1)
+        uv.setXY(i, (v3.length() - innerR) / (outerR - innerR), 0.5)
       }
       const ringMat = new THREE.MeshBasicMaterial({
-        color: 0x9B59B6, transparent: true, opacity: 0.55,
+        map: makeRingTexture(config.ringColor ?? 0xB089D6),
+        transparent: true, opacity: 0.85,
         side: THREE.DoubleSide, depthWrite: false,
       })
       const ring = new THREE.Mesh(ringGeo, ringMat)
-      ring.rotation.x = Math.PI / 2
+      ring.rotation.x = Math.PI / 2.05   // slight tilt so it isn't perfectly edge-on
       this.planetGroup.add(ring)
     }
 
@@ -133,13 +149,13 @@ export class Planet {
     return pos
   }
 
-  // Called by ProximitySystem when ship enters scan range
+  // Called by ProximitySystem when ship enters scan range — brighten the halo
   onProximityEnter() {
-    gsap.to(this.atmMat.uniforms.emissiveBoost, { value: 0.15, duration: 0.5 })
+    gsap.to(this.halo.material, { opacity: this._haloBase * 1.9, duration: 0.5 })
   }
 
   // Called by ProximitySystem when ship leaves scan range
   onProximityExit() {
-    gsap.to(this.atmMat.uniforms.emissiveBoost, { value: 0.0, duration: 0.5 })
+    gsap.to(this.halo.material, { opacity: this._haloBase, duration: 0.5 })
   }
 }

@@ -4,7 +4,9 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { state } from '../state.js'
 import * as InputSystem from '../systems/InputSystem.js'
+import * as AudioSystem from '../systems/AudioSystem.js'
 import { renderer } from '../core/scene.js'
+import { makeGlowSprite } from '../core/glow.js'
 
 // Shared PMREM environment for the ship's PBR materials. HELIOS is the only real
 // scene light, so metallic/specular surfaces have nothing to reflect and read
@@ -37,6 +39,16 @@ const TURN_RATE    = 1.7   // rad/s yaw speed for A/D
 const BANK_MAX     = 0.45  // rad — visual roll into turns (model-only, camera stays level)
 const PITCH_MAX    = 0.3   // rad — visual nose pitch from vertical velocity (model-only)
 
+// Turbo (hold Shift + W): a big speed/accel boost with flared thrusters + wider FOV.
+const TURBO_SPEED_MULT  = 2.6
+const TURBO_THRUST_MULT = 2.5
+
+// Rear thruster glow sprites — positions in ship-local GROUP space (rear = +Z).
+const THRUSTER_OFFSETS = [
+  new THREE.Vector3(-3.1, 0, 7.4),
+  new THREE.Vector3( 3.1, 0, 7.4),
+]
+
 export class Ship {
   constructor() {
     this.group = new THREE.Group()
@@ -57,6 +69,7 @@ export class Ship {
 
     // Smoothed control inputs for the visual bank/pitch
     this._smoothYaw = 0
+    this._wasTurbo = false
 
     // Logical heading (rad). Persistent across frames — deriving it from the
     // slerp-lagged quaternion every frame would throttle the turn rate to
@@ -136,8 +149,15 @@ export class Ship {
     })
     this.group.add(this.model)
 
-    // No custom engine-glow sprites: this model has its own emissive engine
-    // geometry that the bloom pass picks up.
+    // Rear thruster glow — additive sprites that flare with thrust/speed (and
+    // blaze in turbo). The model's own emissive engines are the base; these are
+    // the dynamic exhaust that reacts to movement.
+    this.thrusters = THRUSTER_OFFSETS.map(off => {
+      const t = makeGlowSprite(0x86E4FF, 2.2, 0)
+      t.position.copy(off)
+      this.group.add(t)
+      return t
+    })
 
     // Camera-side fill light. HELIOS is the only scene light and it sits AHEAD of
     // the ship when flying starward, so the chase cam (which views the rear) would
@@ -168,7 +188,15 @@ export class Ship {
     const thrustFwd  = (InputSystem.isPressed('KeyW') || InputSystem.isPressed('ArrowUp')    ? 1 : 0)
                      - (InputSystem.isPressed('KeyS') || InputSystem.isPressed('ArrowDown')  ? 1 : 0)
     const thrustVert = (InputSystem.isPressed('Space') ? 1 : 0)
-                     - (InputSystem.isPressed('ShiftLeft') || InputSystem.isPressed('ControlLeft') ? 1 : 0)
+                     - (InputSystem.isPressed('ControlLeft') ? 1 : 0)
+
+    // Turbo: hold Shift while thrusting forward → big speed + accel boost.
+    const turbo = (InputSystem.isPressed('ShiftLeft') || InputSystem.isPressed('ShiftRight')) && thrustFwd > 0
+    state.turbo = turbo
+    if (turbo && !this._wasTurbo) AudioSystem.play('boost')
+    this._wasTurbo = turbo
+    const maxSpeed    = turbo ? MAX_SPEED   * TURBO_SPEED_MULT  : MAX_SPEED
+    const thrustForce = turbo ? THRUST_FORCE * TURBO_THRUST_MULT : THRUST_FORCE
 
     // Re-sync the logical heading only after external control (autopilot) moved
     // the ship; otherwise integrate it directly so A/D turns at full TURN_RATE.
@@ -188,9 +216,9 @@ export class Ship {
       .addScaledVector(WORLD_UP, thrustVert)
     if (this._thrustWorld.lengthSq() > 1) this._thrustWorld.normalize()
 
-    state.shipVelocity.addScaledVector(this._thrustWorld, THRUST_FORCE * delta)
+    state.shipVelocity.addScaledVector(this._thrustWorld, thrustForce * delta)
     state.shipVelocity.multiplyScalar(DRAG)
-    state.shipVelocity.clampLength(0, MAX_SPEED)
+    state.shipVelocity.clampLength(0, maxSpeed)
 
     this.group.position.addScaledVector(state.shipVelocity, delta)
     state.shipPosition.copy(this.group.position)
@@ -210,6 +238,16 @@ export class Ship {
     const pitchTarget = THREE.MathUtils.clamp(state.shipVelocity.y * 0.018, -PITCH_MAX, PITCH_MAX)
     this.model.rotation.z = -this._smoothYaw * BANK_MAX
     this.model.rotation.x = THREE.MathUtils.lerp(this.model.rotation.x, pitchTarget, 0.1)
+
+    // Thruster flare — small nozzle glows that swell with forward thrust + speed,
+    // a bit more in turbo. Kept compact so they read as exhaust, not a halo.
+    const speedFrac = Math.min(1, state.shipVelocity.length() / MAX_SPEED)
+    const drive = Math.min(1, Math.max(0, thrustFwd) * 0.6 + speedFrac * 0.4) + (turbo ? 0.45 : 0)
+    for (const t of this.thrusters) {
+      t.material.opacity = THREE.MathUtils.lerp(t.material.opacity, Math.min(0.85, drive * 0.7), 0.2)
+      const sc = 0.8 + drive * 1.5
+      t.scale.setScalar(THREE.MathUtils.lerp(t.scale.x, sc, 0.2))
+    }
   }
 
   // Smoothly orient toward the travel direction (state.shipVelocity). A per-frame

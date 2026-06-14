@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js'
 import { state } from '../state.js'
-import * as DiscoveryLog from '../ui/DiscoveryLog.js'
 import * as AudioSystem from '../systems/AudioSystem.js'
 
 // One-shot comet. Appears APPEAR_DELAY into the session, follows a bezier arc
@@ -110,7 +109,6 @@ export class Comet {
     }
     this.trail.geometry.attributes.position.needsUpdate = true
     this.group.visible = true
-    DiscoveryLog.addEntry('◈ COMET DETECTED')
     AudioSystem.play('comet')
   }
 

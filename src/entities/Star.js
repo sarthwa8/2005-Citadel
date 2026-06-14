@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { makeGlowSprite } from '../core/glow.js'
 
 // HELIOS — the system's star. Uses a textured GLB model (auto-normalized to
 // SUN_RADIUS) instead of the old procedural shader sphere, which read as a
@@ -17,15 +18,11 @@ export class Star {
     this.spin = new THREE.Group()
     this.group.add(this.spin)
 
-    // Soft corona — additive BackSide shell. Low opacity so it's a gentle glow,
-    // not a hard bright disc.
-    const coronaGeo = new THREE.SphereGeometry(SUN_RADIUS * 1.35, 48, 48)
-    const coronaMat = new THREE.MeshBasicMaterial({
-      color: 0xFFB35C, transparent: true, opacity: 0.10,
-      depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide,
-    })
-    this.corona = new THREE.Mesh(coronaGeo, coronaMat)
-    this.group.add(this.corona)
+    // Soft diffuse corona — a camera-facing halo that fades naturally into space
+    // (a layered pair: a tight warm core glow + a broad faint outer wash).
+    this.coronaInner = makeGlowSprite(0xFFC070, SUN_RADIUS * 3.0, 0.55)
+    this.coronaOuter = makeGlowSprite(0xE89048, SUN_RADIUS * 6.5, 0.22)
+    this.group.add(this.coronaInner, this.coronaOuter)
 
     // Primary scene light — warm, moderate. distance=0 (no cutoff), decay=1.2 so it
     // still reaches CODEX/NOVARA at r=285; intensity dialled down from the old 200
@@ -80,6 +77,7 @@ export class Star {
   update(elapsed) {
     this.spin.rotation.y = elapsed * 0.02
     // Subtle corona breathing
-    this.corona.material.opacity = 0.09 + 0.025 * Math.sin(elapsed * 0.7)
+    this.coronaInner.material.opacity = 0.52 + 0.06 * Math.sin(elapsed * 0.7)
+    this.coronaOuter.material.opacity = 0.20 + 0.04 * Math.sin(elapsed * 0.5 + 1.0)
   }
 }

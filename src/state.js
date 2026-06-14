@@ -35,4 +35,7 @@ export const state = {
   // Polish (Phase 16)
   inAsteroidBelt: false,   // ship inside the belt torus → camera turbulence
   inDarkZone: false,       // ship beyond the charted boundary → HUD warning + pushback
+
+  // Flight
+  turbo: false,            // turbo boost engaged (Shift + W) → speed + FOV + thrusters
 }

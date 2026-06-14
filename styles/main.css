@@ -23,8 +23,8 @@
   --me-border:      rgba(120, 190, 240, 0.40);
   --me-glow:        rgba(95, 180, 238, 0.40);
 
-  --font-ui:      'Rajdhani', system-ui, -apple-system, sans-serif;
-  --font-display: 'Orbitron', 'Rajdhani', sans-serif;
+  --font-ui:      'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -71,24 +71,58 @@ canvas { display: block; }
   z-index: 5;
 }
 
-#hud-top-left  { position: absolute; top: 18px; left: 18px; }
-#hud-top-right { position: absolute; top: 18px; right: 18px; width: 230px; }
+#hud-top-right { position: absolute; top: 18px; right: 18px; width: 250px; }
 
-.minimap-frame { padding: 10px 10px 8px; width: max-content; }
-#minimap { width: 150px; height: 150px; display: block; border-radius: 6px; }
+/* Quest / objectives checklist */
+#quest-log { padding: 14px 16px; }
+.quest-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+#quest-count { font-size: 12px; font-weight: 600; letter-spacing: 1px; color: var(--accent); }
 
-#discovery-log { padding: 12px 14px; min-width: 200px; }
-.log-entry {
-  opacity: 0;
-  transform: translateY(-8px);
-  padding: 4px 0;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  color: var(--text);
-  border-bottom: 1px solid var(--border-soft);
+#quest-bar { height: 3px; background: var(--border-soft); border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
+#quest-bar-fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+  box-shadow: 0 0 8px var(--glow);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.log-entry:last-child { border-bottom: none; }
+
+.quest-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 4px;
+  border-radius: 6px;
+}
+.quest-check {
+  flex: 0 0 14px; width: 14px; height: 14px;
+  border: 1.5px solid var(--text-faint);
+  border-radius: 3px;
+  position: relative;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+}
+.quest-name {
+  flex: 1;
+  font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  color: var(--text-dim);
+  transition: color 0.3s;
+}
+.quest-sub {
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.quest-item.done .quest-check {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--glow);
+}
+.quest-item.done .quest-check::after {
+  content: '';
+  position: absolute; left: 4px; top: 1px;
+  width: 4px; height: 8px;
+  border: solid #04070c; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.quest-item.done .quest-name { color: var(--accent-bright); }
+.quest-item.done .quest-sub  { color: var(--text-dim); }
 
 /* Contextual "E · SCAN" prompt */
 #scan-prompt {
@@ -338,12 +372,12 @@ canvas { display: block; }
 
 #landing-title {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(36px, 6.6vw, 78px);
-  letter-spacing: 7px;
+  font-weight: 700;
+  font-size: clamp(36px, 6.6vw, 76px);
+  letter-spacing: 3px;
   margin: 0;
-  line-height: 1.05;
-  filter: drop-shadow(0 0 28px rgba(79, 214, 192, 0.32));
+  line-height: 1.06;
+  filter: drop-shadow(0 0 26px rgba(79, 214, 192, 0.30));
 }
 /* Per-glyph shimmer gradient + staggered blur-in (ShinyText + SplitText) */
 #landing-title .char {

@@ -4,6 +4,7 @@ import { initCamera, camera, updateCamera, transitionTo } from './core/camera.js
 import { state } from './state.js'
 import { Star } from './entities/Star.js'
 import { Starfield } from './entities/Starfield.js'
+import { Nebula } from './entities/Nebula.js'
 import { Planet } from './entities/Planet.js'
 import { AsteroidBelt } from './entities/AsteroidBelt.js'
 import { Station } from './entities/Station.js'
@@ -17,9 +18,10 @@ import * as ScanSystem from './systems/ScanSystem.js'
 import * as AutopilotSystem from './systems/AutopilotSystem.js'
 import * as AudioSystem from './systems/AudioSystem.js'
 import * as HUD from './ui/HUD.js'
-import * as MiniMap from './ui/MiniMap.js'
+import * as QuestLog from './ui/QuestLog.js'
 import { initLanding } from './ui/Landing.js'
 import { PLANET_CONFIGS, STATION_CONFIG } from './data/planetConfigs.js'
+import { BODIES } from './data/bodies.js'
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 
@@ -31,6 +33,9 @@ initComposerPasses(camera)
 InputSystem.init()
 
 // ── Entities ───────────────────────────────────────────────────────────────
+
+const nebula = new Nebula()
+threeScene.add(nebula.group)
 
 const star = new Star()
 threeScene.add(star.group)
@@ -69,7 +74,13 @@ ProximitySystem.init(planets, station, comet)
 ScanSystem.init({ scene: threeScene, ship })
 AutopilotSystem.init({ ship })
 HUD.init()
-MiniMap.init({ planets, asteroidBelt, station })
+
+// Quest objectives — one per scannable portfolio section (planets + station)
+QuestLog.init([...planets, station].map(b => ({
+  name:  b.config.name,
+  label: b.config.name,
+  sub:   BODIES[b.config.bodyKey]?.heading ?? '',
+})))
 
 // ── Audio — browsers block sound until a user gesture, so arm it on the first
 // keypress or click (whichever comes first), then the gate removes itself ────
@@ -145,7 +156,6 @@ function animate() {
 
   // UI
   HUD.update()
-  MiniMap.update()   // internally throttled to 500ms
 
   // Camera
   updateCamera(ship, deltaMs)

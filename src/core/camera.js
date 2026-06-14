@@ -16,6 +16,9 @@ const OVERVIEW_POS    = new THREE.Vector3(0, 500, 200)
 const OVERVIEW_RADIUS = OVERVIEW_POS.length()
 const TRANSITION_SECS = 1.1
 
+const BASE_FOV  = 60
+const TURBO_FOV = 82
+
 // Scan mode: camera parks at radius*2.5 from the body (floored so tiny moons
 // don't put it inside the label), elevated, drifting slowly around it.
 const SCAN_DIST_FACTOR   = 2.5
@@ -195,6 +198,14 @@ export function updateCamera(ship, deltaMs = 16.7) {
     )
     _lookTarget.set(0, 0, 0)
     camera.lookAt(_lookTarget)
+  }
+
+  // Speed-rush FOV: widen during turbo or autopilot cruise, ease back otherwise.
+  const boosting = state.cameraMode === 'flight' && (state.turbo || state.autopilotActive)
+  const targetFov = boosting ? TURBO_FOV : BASE_FOV
+  if (Math.abs(camera.fov - targetFov) > 0.04) {
+    camera.fov += (targetFov - camera.fov) * 0.08
+    camera.updateProjectionMatrix()
   }
 }
 

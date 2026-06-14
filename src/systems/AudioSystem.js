@@ -23,6 +23,9 @@ const MANIFEST = {
   moonUnlock: { src: '/audio/moon_unlock.mp3',    loop: false, volume: 0.6  },
   thruster:   { src: '/audio/thruster.mp3',       loop: true,  volume: 0    },
   comet:      { src: '/audio/comet_detected.mp3', loop: false, volume: 0.55 },
+  boost:      { src: '/audio/boost.mp3',          loop: false, volume: 0.6  },
+  objective:  { src: '/audio/objective_complete.mp3', loop: false, volume: 0.6 },
+  uiClick:    { src: '/audio/ui_click.mp3',       loop: false, volume: 0.35 },
 }
 
 export function init() {

@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 import { gsap } from 'gsap'
 import { state } from '../state.js'
-import { camera } from '../core/camera.js'
 import * as InputSystem from './InputSystem.js'
 
 // Click a body in overview → the ship flies itself there. GSAP tweens an eased
@@ -23,13 +22,6 @@ const MIN_DURATION  = 2.5
 const MAX_DURATION  = 8
 const PARK_FACTOR   = 0.7   // arrive at scanRadius * this from the body center
 const TAKEOFF_DELAY = 1.15  // let the overview→flight camera transition land first
-
-// Turbo: a quick FOV widen-then-settle gives a warp/zoom rush as the ship lunges
-// toward the target, then eases back to the base lens by arrival.
-const BASE_FOV  = 60
-const TURBO_FOV = 88
-const _fov = { v: BASE_FOV }
-const setFov = () => { camera.fov = _fov.v; camera.updateProjectionMatrix() }
 
 let ship = null
 let tween = null
@@ -63,7 +55,6 @@ export function flyTo(body) {
 
   const dist = startPos.distanceTo(body.worldPosition())
   const cruiseDur = THREE.MathUtils.clamp(dist / CRUISE_SPEED, MIN_DURATION, MAX_DURATION)
-  startTurbo(cruiseDur)
   progress.t = 0
   phase = 'cruise'
   tween = gsap.to(progress, {
@@ -90,25 +81,6 @@ export function cancel() {
   phase = 'idle'
   state.autopilotActive = false
   state.autopilotTarget = null
-  resetTurbo()
-}
-
-// FOV punch on launch (after the takeoff delay), easing back across the cruise.
-function startTurbo(cruiseDur) {
-  gsap.killTweensOf(_fov)
-  _fov.v = BASE_FOV
-  gsap.to(_fov, {
-    v: TURBO_FOV, duration: 0.6, delay: TAKEOFF_DELAY, ease: 'power3.out',
-    onUpdate: setFov,
-    onComplete: () => gsap.to(_fov, {
-      v: BASE_FOV, duration: Math.max(0.6, cruiseDur - 0.6), ease: 'power2.inOut', onUpdate: setFov,
-    }),
-  })
-}
-
-function resetTurbo() {
-  gsap.killTweensOf(_fov)
-  gsap.to(_fov, { v: BASE_FOV, duration: 0.4, ease: 'power2.out', onUpdate: setFov })
 }
 
 export function update(delta) {

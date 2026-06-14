@@ -3,7 +3,7 @@ import { gsap } from 'gsap'
 import { state } from '../state.js'
 import { transitionTo } from '../core/camera.js'
 import * as InfoPanel from '../ui/InfoPanel.js'
-import * as DiscoveryLog from '../ui/DiscoveryLog.js'
+import * as QuestLog from '../ui/QuestLog.js'
 import * as AudioSystem from './AudioSystem.js'
 
 // The scan loop: E in range → ship ring flares + a teal pulse sphere expands from
@@ -32,7 +32,6 @@ export function init(deps) {
   })
 
   InfoPanel.init(closePanel)
-  DiscoveryLog.init()
 }
 
 function triggerScan() {
@@ -57,11 +56,9 @@ function triggerScan() {
     },
   })
 
-  // 2. Pulse sphere expands from the ship until its shell reaches the target,
-  // with two fainter echo ripples trailing it (the "scan trail")
-  spawnScanPulse(ship.group.position, target, 0.55, 0)
-  spawnScanPulse(ship.group.position, target, 0.28, 130)
-  spawnScanPulse(ship.group.position, target, 0.14, 260)
+  // 2. A clean holographic wireframe sphere materializes around the target and
+  // rotates — reads as the scan "locking on", far crisper than overlapping blobs.
+  spawnScanSphere(target)
 
   // 3. On pulse arrival: open panel, log discovery, unlock moons (first scan only)
   setTimeout(() => {
@@ -71,7 +68,7 @@ function triggerScan() {
     if (!state.discoveredBodies.has(target.config.name)) {
       state.discoveredBodies.add(target.config.name)
       state.discoveryOrder.push(target.config.name)
-      DiscoveryLog.addEntry(target.config.label ?? target.config.name)
+      QuestLog.markComplete(target.config.name)
       target.moons?.forEach(m => m.unlock())
       if (target.config.bodyKey === 'COMET') state.cometScanned = true
     }
@@ -92,33 +89,37 @@ function closePanel() {
   transitionTo('flight', ship)
 }
 
-// Expanding BackSide sphere — reads as a wavefront washing over the target.
-// depthWrite:false so the transparent shell never cuts holes in geometry.
-// peakOpacity/delayMs let triggerScan stagger fainter echo ripples behind the
-// main front so the scan reads as a trail of waves rather than one shell.
-function spawnScanPulse(origin, target, peakOpacity = 0.55, delayMs = 0) {
-  const geo = new THREE.SphereGeometry(1, 24, 24)
-  const mat = new THREE.MeshBasicMaterial({
-    color: 0x48C9B0, transparent: true, opacity: peakOpacity,
-    depthWrite: false, side: THREE.BackSide,
-  })
-  const pulse = new THREE.Mesh(geo, mat)
-  pulse.position.copy(origin)
-  scene.add(pulse)
+// Holographic scan: a wireframe sphere + a thin equatorial ring both materialize
+// around the target, scale up with a slight overshoot, rotate, then fade as the
+// dossier opens. Parented to the target so it tracks the body's orbital motion.
+function spawnScanSphere(target) {
+  const r = (target.config?.radius ?? 5) * 1.25
+  const parent = target.planetGroup || target.stationGroup || target.group || scene
 
-  const dist = origin.distanceTo(target.worldPosition())
-  gsap.to(pulse.scale, {
-    x: dist, y: dist, z: dist,
-    duration: PULSE_FLIGHT_MS / 1000,
-    delay: delayMs / 1000,
-    ease: 'power1.out',
-    onUpdate: function () {
-      mat.opacity = peakOpacity * (1 - this.progress())
-    },
-    onComplete: () => {
-      scene.remove(pulse)
-      geo.dispose()
-      mat.dispose()
-    },
-  })
+  const grp = new THREE.Group()
+  grp.scale.setScalar(0.01)
+  parent.add(grp)
+
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(r, 22, 16),
+    new THREE.MeshBasicMaterial({ color: 0x7FE9FF, wireframe: true, transparent: true, opacity: 0, depthWrite: false })
+  )
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(r * 1.12, r * 0.012, 6, 80),
+    new THREE.MeshBasicMaterial({ color: 0xBFF4FF, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })
+  )
+  ring.rotation.x = Math.PI / 2
+  grp.add(sphere, ring)
+
+  const cleanup = () => {
+    parent.remove(grp)
+    sphere.geometry.dispose(); sphere.material.dispose()
+    ring.geometry.dispose(); ring.material.dispose()
+  }
+
+  gsap.to(grp.scale, { x: 1, y: 1, z: 1, duration: 0.55, ease: 'back.out(2)' })
+  gsap.to(sphere.material, { opacity: 0.5, duration: 0.3 })
+  gsap.to(ring.material,   { opacity: 0.9, duration: 0.3 })
+  gsap.to(grp.rotation,    { y: Math.PI * 1.4, duration: 1.6, ease: 'none' })
+  gsap.to([sphere.material, ring.material], { opacity: 0, duration: 0.5, delay: 1.0, onComplete: cleanup })
 }

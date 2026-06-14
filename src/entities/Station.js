@@ -87,7 +87,13 @@ export class Station {
         n.scale.set(1, 1, 1)
       }
       if (n.isMesh && n.material) {
-        n.material.metalness = Math.min(n.material.metalness ?? 0, 0.4)
+        // The model is a flat pure-white material — lit by the sun it crosses the
+        // bloom threshold and, as a tiny bright cluster at distance, blooms into a
+        // blocky square. Tint it to a metallic grey so it reads as a hull, not a
+        // light source.
+        n.material.color?.setHex(0x8390a0)
+        n.material.metalness = 0.55
+        n.material.roughness = 0.55
         n.material.needsUpdate = true
       }
     })
