@@ -83,6 +83,7 @@ function triggerScan() {
 
 function closePanel() {
   if (!state.panelOpen) return
+  AudioSystem.play('uiClick')
   InfoPanel.hide()
   state.panelOpen = false
   state.scanTarget = null

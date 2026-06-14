@@ -99,6 +99,7 @@ for (const body of [...planets, station]) {
   body.labelEl.classList.add('label-clickable')
   body.labelEl.addEventListener('click', () => {
     if (state.cameraMode !== 'overview' || state.transitioning || !ship.ready) return
+    AudioSystem.play('uiClick')
     AutopilotSystem.flyTo(body)
     transitionTo('flight', ship)
   })
@@ -168,4 +169,4 @@ animate()
 
 // ── Landing / briefing — first screen; ENTER arms audio and reveals the system ──
 
-initLanding(() => { AudioSystem.init() })
+initLanding(() => { AudioSystem.init(); AudioSystem.play('uiClick') })
