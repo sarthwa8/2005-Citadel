@@ -1,10 +1,13 @@
 import * as THREE from 'three'
-import { initScene, initComposerPasses, composer, css2DRenderer } from './core/scene.js'
+import * as Loading from './ui/Loading.js'   // first — hooks the shared loader manager before any asset loads
+import { initScene, initComposerPasses, composer, css2DRenderer, setPixelated, isPixelated } from './core/scene.js'
 import { initCamera, camera, updateCamera, transitionTo } from './core/camera.js'
 import { state } from './state.js'
 import { Star } from './entities/Star.js'
 import { Starfield } from './entities/Starfield.js'
 import { Nebula } from './entities/Nebula.js'
+import { Galaxy } from './entities/Galaxy.js'
+import { ShootingStars } from './entities/ShootingStars.js'
 import { Planet } from './entities/Planet.js'
 import { AsteroidBelt } from './entities/AsteroidBelt.js'
 import { Station } from './entities/Station.js'
@@ -42,6 +45,13 @@ threeScene.add(star.group)
 
 const starfield = new Starfield()
 threeScene.add(starfield.group)
+
+// Distant spiral galaxies (colourful far-field discs) + occasional shooting stars
+const galaxy = new Galaxy()
+threeScene.add(galaxy.group)
+
+const shootingStars = new ShootingStars()
+threeScene.add(shootingStars.group)
 
 // All 5 planets, instantiated from config
 const planets = PLANET_CONFIGS.map(cfg => new Planet(cfg))
@@ -116,6 +126,10 @@ window.addEventListener('keydown', e => {
       transitionTo('overview')
     }
   }
+  // P — toggle retro pixelation (off by default; lets you preview and revert live)
+  if (e.code === 'KeyP') {
+    setPixelated(!isPixelated())
+  }
 })
 
 // ── Game loop ──────────────────────────────────────────────────────────────
@@ -136,6 +150,9 @@ function animate() {
   const deltaMs = delta * 1000   // orbital speeds are in rad/ms per spec
 
   star.update(elapsed)
+  nebula.update(elapsed)
+  galaxy.update(delta)
+  shootingStars.update(deltaMs)
 
   // Orbital motion runs on a slowed clock so planets/moons drift gently enough to
   // approach and scan. The comet keeps real time so its one-shot timing is intact.
@@ -169,4 +186,9 @@ animate()
 
 // ── Landing / briefing — first screen; ENTER arms audio and reveals the system ──
 
-initLanding(() => { AudioSystem.init(); AudioSystem.play('uiClick') })
+Loading.initLoadingUI()
+initLanding(async () => {
+  AudioSystem.init()
+  AudioSystem.play('uiClick')
+  await Loading.runLoading()   // hold the system behind the loading screen until assets are ready
+})

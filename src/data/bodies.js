@@ -1,146 +1,174 @@
-// Portfolio content for every scannable body. EVERY personal detail here is a
-// placeholder — fill them in manually. Structure mirrors build_context.md:
+// Portfolio content for every scannable body. Structure mirrors build_context.md:
 // planets are sections, moons are entries within a section. Moon `name` keys
 // must match the moon names in planetConfigs.js (LANG, EXP_1, PROJ_1, ...).
+//
+// NOTE: ACADEMY was trimmed to a single education entry (EDU_1). The EDU_2 moon
+// still defined in planetConfigs.js should be removed so it has no empty body.
 export const BODIES = {
-
   HELIOS: {
-    name:    '[YOUR_NAME]',
-    tagline: '[YOUR_ONE_LINE_TAGLINE]',
+    name: "Sarthak Sukhral",
+    tagline: "AI/ML Engineer & Researcher",
   },
 
   GENESIS: {
-    heading: 'About',
-    bio:      '[BIO_PARAGRAPH]',
-    location: '[YOUR_CITY], [YOUR_COUNTRY]',
-    status:   '[CURRENT_STATUS]',
+    heading: "About",
+    bio: "B.Tech ECE student at Punjab Engineering College building at the intersection of machine learning, computer vision, and systems engineering. My work spans medical image analysis (brain-tumor survival models on BraTS), vision-language model evaluation, and real-time edge AI — from training stacked deep-learning ensembles to deploying full-stack digital twins on a Raspberry Pi. I care about research that ships: models that run in under two seconds in the browser, and systems that hold up outside the notebook.",
+    location: "Gurgaon, India",
+    status:
+      "Final-year B.Tech (ECE) @ PEC Chandigarh · Open to AI/ML & SDE roles",
     scanRadius: 35,
   },
 
   SYNTHEX: {
-    heading: 'Skills',
+    heading: "Skills",
     scanRadius: 35,
     moons: [
-      { name: 'LANG',  label: 'Languages',     items: ['[LANG_1]', '[LANG_2]', '[LANG_3]', '[LANG_4]'] },
-      { name: 'AIML',  label: 'AI / ML',       items: ['[AIML_1]', '[AIML_2]', '[AIML_3]', '[AIML_4]'] },
-      { name: 'WEB',   label: 'Web & Backend', items: ['[WEB_1]', '[WEB_2]', '[WEB_3]', '[WEB_4]'] },
-      { name: 'TOOLS', label: 'Tools & Infra', items: ['[TOOL_1]', '[TOOL_2]', '[TOOL_3]', '[TOOL_4]'] },
+      {
+        name: "LANG",
+        label: "Languages",
+        items: ["Python", "C++", "Go", "JavaScript"],
+      },
+      {
+        name: "AIML",
+        label: "AI / ML",
+        items: [
+          "PyTorch & TensorFlow",
+          "Computer Vision / CNNs",
+          "Graph Neural Nets)",
+          "LLM Fine-Tuning",
+          "RAG",
+        ],
+      },
+      {
+        name: "WEB",
+        label: "Web & Backend",
+        items: ["FastAPI", "PostgreSQL", "Redis & Celery", "React"],
+      },
+      {
+        name: "TOOLS",
+        label: "Tools & Infra",
+        items: ["Docker", "GitHub Actions CI/CD", "ChromaDB", "ROCm / ONNX"],
+      },
     ],
   },
 
   EXPEDITION: {
-    heading: 'Experience',
+    heading: "Experience",
     scanRadius: 35,
     moons: [
       {
-        name: 'EXP_1',
-        label:       '[COMPANY_1]',
-        role:        '[ROLE_1]',
-        duration:    '[START_DATE_1] – [END_DATE_1]',
-        description: '[DESCRIPTION_1]',
-      },
-      {
-        name: 'EXP_2',
-        label:       '[COMPANY_2]',
-        role:        '[ROLE_2]',
-        duration:    '[START_DATE_2] – [END_DATE_2]',
-        description: '[DESCRIPTION_2]',
-      },
-      {
-        name: 'EXP_3',
-        label:       '[COMPANY_3]',
-        role:        '[ROLE_3]',
-        duration:    '[START_DATE_3] – [END_DATE_3]',
-        description: '[DESCRIPTION_3]',
+        name: "EXP_1",
+        label: "National Physical Laboratory (NPL)",
+        role: "Research Intern",
+        duration: "Jan 2026 – May 2026",
+        description:
+          "Built a real-time digital twin for a 0.5 HP induction motor — fusing VFD electrical signals (Modbus RS-485), 1 kHz vibration (MPU-6050), and thermal data into a live React dashboard with bidirectional motor control over HTTPS. Trained a stacked CNN/LSTM/Transformer ensemble on the CWRU bearing dataset for four-class fault detection (97.1% accuracy, 0.971 F1), exported to ONNX for real-time edge inference on a Raspberry Pi 4.",
       },
     ],
   },
 
   CODEX: {
-    heading: 'Projects',
+    heading: "Projects",
     scanRadius: 40,
     moons: [
       {
-        name: 'PROJ_1',
-        label:       '[PROJECT_1_NAME]',
-        tech:        '[PROJECT_1_TECH_STACK]',
-        description: '[PROJECT_1_DESCRIPTION]',
-        link:        '[PROJECT_1_LINK]',
+        name: "PROJ_1",
+        label: "CodeLens",
+        tech: "FastAPI · PostgreSQL · Redis · Celery · ChromaDB · Docker",
+        description:
+          "AI-powered real-time code review agent: a webhook-driven pipeline doing GitHub diff ingestion, tree-sitter AST parsing, ChromaDB RAG retrieval, LLM review generation, and live SSE streaming to the browser. Redis-backed Celery workers decouple webhook response from LLM latency; SHA-256 content-addressable caching cuts redundant LLM calls by 40%.",
+        link: "https://github.com/sarthwa8",
       },
       {
-        name: 'PROJ_2',
-        label:       '[PROJECT_2_NAME]',
-        tech:        '[PROJECT_2_TECH_STACK]',
-        description: '[PROJECT_2_DESCRIPTION]',
-        link:        '[PROJECT_2_LINK]',
+        name: "PROJ_2",
+        label: "NeuroAccess",
+        tech: "PyTorch · FastAPI · ROCm",
+        description:
+          "Brain-tumor clinical decision support. Contributed an SSC-based 3D convolution decomposition (trainable parameters down to 1.7M) and a radiomics class-overlap mitigation strategy for 3-class survival classification on BraTS 2020 — state-of-the-art accuracy vs. published baselines. Deployed as a browser-based tool with sub-2s end-to-end inference on AMD Instinct GPU via ROCm.",
+        link: "https://github.com/sarthwa8",
       },
       {
-        name: 'PROJ_3',
-        label:       '[PROJECT_3_NAME]',
-        tech:        '[PROJECT_3_TECH_STACK]',
-        description: '[PROJECT_3_DESCRIPTION]',
-        link:        '[PROJECT_3_LINK]',
+        name: "PROJ_3",
+        label: "GraminGPT",
+        tech: "FastAPI · Docker · Whisper · OpenStreetMap",
+        description:
+          "Vernacular healthcare AI backend. A high-concurrency FastAPI service running an OpenAI Whisper voice pipeline for vernacular speech (sub-300ms latency), wired to the OpenStreetMap API for location-aware hospital routing. Fully containerised via Docker for reproducible deployment.",
+        link: "https://github.com/sarthwa8",
       },
       {
-        name: 'PROJ_4',
-        label:       '[PROJECT_4_NAME]',
-        tech:        '[PROJECT_4_TECH_STACK]',
-        description: '[PROJECT_4_DESCRIPTION]',
-        link:        '[PROJECT_4_LINK]',
+        name: "PROJ_4",
+        label: "VLM Hallucination Analysis",
+        tech: "Qwen2.5-VL-7B · QLoRA · Hugging Face",
+        description:
+          "A failure-mode study of QLoRA fine-tuning (LoRA rank 16, 4-bit) on Qwen2.5-VL-7B over 400 structured radiology reports across 4 evaluation tasks. Found fine-tuning increased hallucinations by 133% on classification (p=0.003) and 42.9% on clinical reasoning (p=0.04); traced the root cause to synthetic-data contamination and built an 8-type / 26-subtype clinical hallucination taxonomy with a 4-point severity scale.",
+        link: "https://github.com/sarthwa8",
       },
       {
-        name: 'PROJ_5',
-        label:       '[PROJECT_5_NAME]',
-        tech:        '[PROJECT_5_TECH_STACK]',
-        description: '[PROJECT_5_DESCRIPTION]',
-        link:        '[PROJECT_5_LINK]',
+        name: "PROJ_5",
+        label: "HeteroGNN — Glioblastoma Survival",
+        tech: "PyTorch Geometric · GATv2",
+        description:
+          "A heterogeneous GNN with GATv2 cross-modal attention addressing the modality-dilution problem in multimodal survival analysis. Each patient is modelled as a graph with 3 node types (clinical, shape, intensity) extracted from BraTS 2020 (N=235). 5-fold cross-validation reached C-Index 0.62, beating Cox Proportional Hazards (0.58) and early-fusion MLP baselines.",
+        link: "https://github.com/sarthwa8",
       },
     ],
   },
 
   ACADEMY: {
-    heading: 'Education',
+    heading: "Education",
     scanRadius: 35,
     moons: [
       {
-        name: 'EDU_1',
-        label:  '[INSTITUTION_1]',
-        degree: '[DEGREE_1]',
-        field:  '[FIELD_OF_STUDY_1]',
-        period: '[YEAR_FROM_1] – [YEAR_TO_1]',
-        detail: '[EDU_DETAIL_1]',
-      },
-      {
-        name: 'EDU_2',
-        label:  '[INSTITUTION_2]',
-        degree: '[DEGREE_2]',
-        field:  '[FIELD_OF_STUDY_2]',
-        period: '[YEAR_FROM_2] – [YEAR_TO_2]',
-        detail: '[EDU_DETAIL_2]',
+        name: "EDU_1",
+        label: "Punjab Engineering College",
+        degree: "B.Tech",
+        field: "Electronics & Communication Engineering",
+        period: "2023 – 2027",
+        detail: "Chandigarh, India.",
       },
     ],
   },
 
   NOVARA: {
-    heading: 'Contact',
+    heading: "Contact",
     scanRadius: 35,
-    email:    '[YOUR_EMAIL]',
-    linkedin: '[LINKEDIN_URL]',
-    github:   '[GITHUB_URL]',
-    twitter:  '[TWITTER_HANDLE]',
-    resume:   '[RESUME_PDF_URL]',
+    email: "sarthakvs10@gmail.com",
+    linkedin: "www.linkedin.com/in/sarthak-sukhral-a82131263",
+    github: "https://github.com/sarthwa8",
+    twitter: "",
+    resume: "",
   },
 
   ASTEROIDS: [
-    { label: '[ACHIEVEMENT_1_SHORT]', detail: '[ACHIEVEMENT_1_FULL_DESCRIPTION]' },
-    { label: '[ACHIEVEMENT_2_SHORT]', detail: '[ACHIEVEMENT_2_FULL_DESCRIPTION]' },
-    { label: '[ACHIEVEMENT_3_SHORT]', detail: '[ACHIEVEMENT_3_FULL_DESCRIPTION]' },
-    { label: '[ACHIEVEMENT_4_SHORT]', detail: '[ACHIEVEMENT_4_FULL_DESCRIPTION]' },
+    {
+      label: "97.1% Fault Detection",
+      detail:
+        "Trained a stacked CNN/LSTM/Transformer ensemble on the CWRU bearing dataset achieving 97.1% accuracy (0.971 F1) on four-class fault detection, deployed for real-time edge inference on a Raspberry Pi 4 at NPL.",
+    },
+    {
+      label: "SOTA on BraTS 2020",
+      detail:
+        "Achieved state-of-the-art 3-class survival-classification accuracy against published baselines on BraTS 2020 with NeuroAccess, using an SSC-based 3D convolution decomposition (1.7M parameters).",
+    },
+    {
+      label: "GoFr Summer of Code",
+      detail:
+        "Selected as a contributor to GoFr Summer of Code, shipping production Go features and bug fixes to the open-source GoFr framework (Jun–Aug 2025).",
+    },
+    {
+      label: "VLM Hallucination Taxonomy",
+      detail:
+        "Original research building an 8-type, 26-subtype clinical hallucination taxonomy for fine-tuned vision-language models, quantifying a 133% rise in classification hallucinations induced by QLoRA fine-tuning.",
+    },
   ],
 
   COMET: {
-    heading: 'Currently Exploring',
-    items: ['[CURRENT_TOPIC_1]', '[CURRENT_TOPIC_2]', '[CURRENT_TOPIC_3]', '[CURRENT_TOPIC_4]'],
+    heading: "Currently Exploring",
+    items: [
+      "Vision-Language Models & hallucination evaluation",
+      "Graph Neural Networks for survival analysis",
+      "Edge AI & ONNX deployment",
+      "Label-grounded fine-tuning",
+    ],
   },
-
-}
+};

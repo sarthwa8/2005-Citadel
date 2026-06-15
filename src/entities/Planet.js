@@ -3,6 +3,7 @@ import { gsap } from 'gsap'
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js'
 import { Moon } from './Moon.js'
 import { makeGlowSprite } from '../core/glow.js'
+import { BODIES } from '../data/bodies.js'
 
 const textureLoader = new THREE.TextureLoader()
 
@@ -129,8 +130,11 @@ export class Planet {
     // equatorial plane. Start LOCKED; ScanSystem (Phase 9) unlocks them.
     for (const moonConfig of config.moons ?? []) {
       // parentKey lets the InfoPanel find this moon's content under its parent
-      // planet's section in bodies.js.
-      const moon = new Moon({ ...moonConfig, parentKey: config.bodyKey })
+      // planet's section in bodies.js. The floating 3D tag also reads its label
+      // straight from bodies.js (falling back to the config label) so all moon
+      // text lives in one file.
+      const content = BODIES[config.bodyKey]?.moons?.find(m => m.name === moonConfig.name)
+      const moon = new Moon({ ...moonConfig, label: content?.label ?? moonConfig.label, parentKey: config.bodyKey })
       this.planetGroup.add(moon.group)
       this.moons.push(moon)
     }

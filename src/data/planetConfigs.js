@@ -44,10 +44,9 @@ export const PLANET_CONFIGS = [
     roughnessMap:    '/textures/rocks_ground_04_rough_1k.jpg',
     atmosphereColor: new THREE.Color(0x27AE60), atmosphereIntensity: 0.8,
     labelColor: '#27AE60', scanRadius: 35,
-    // Education — 2 moons.
+    // Education — 1 moon (single institution).
     moons: [
-      { name: 'EDU_1', label: 'Institution I',  radius: 1.6, orbitRadius: 13, orbitSpeed: 0.0014, orbitAngle: 0.5, color: 0x7DCEA0, labelColor: '#7DCEA0' },
-      { name: 'EDU_2', label: 'Institution II', radius: 1.6, orbitRadius: 18, orbitSpeed: 0.0010, orbitAngle: 3.4, color: 0xA9DFBF, labelColor: '#7DCEA0' },
+      { name: 'EDU_1', label: 'Institution I', radius: 1.6, orbitRadius: 14, orbitSpeed: 0.0012, orbitAngle: 0.5, color: 0x7DCEA0, labelColor: '#7DCEA0' },
     ],
   },
   {
@@ -60,11 +59,9 @@ export const PLANET_CONFIGS = [
     roughnessMap:    '/textures/red_laterite_soil_stones_rough_1k.png',
     atmosphereColor: new THREE.Color(0xE67E22), atmosphereIntensity: 0.7,
     labelColor: '#E67E22', scanRadius: 35,
-    // Experience — 3 moons.
+    // Experience — 1 moon (single role).
     moons: [
-      { name: 'EXP_1', label: 'Company I',   radius: 1.6, orbitRadius: 14, orbitSpeed: 0.0014, orbitAngle: 0.2, color: 0xEDBB99, labelColor: '#E59866' },
-      { name: 'EXP_2', label: 'Company II',  radius: 1.6, orbitRadius: 19, orbitSpeed: 0.0011, orbitAngle: 2.3, color: 0xE59866, labelColor: '#E59866' },
-      { name: 'EXP_3', label: 'Company III', radius: 1.6, orbitRadius: 24, orbitSpeed: 0.0008, orbitAngle: 4.4, color: 0xD35400, labelColor: '#E59866' },
+      { name: 'EXP_1', label: 'Company I', radius: 1.6, orbitRadius: 15, orbitSpeed: 0.0013, orbitAngle: 0.2, color: 0xEDBB99, labelColor: '#E59866' },
     ],
   },
   {
