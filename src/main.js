@@ -1,13 +1,14 @@
 import * as THREE from 'three'
 import * as Loading from './ui/Loading.js'   // first — hooks the shared loader manager before any asset loads
 import { initScene, initComposerPasses, composer, css2DRenderer, setPixelated, isPixelated } from './core/scene.js'
-import { initCamera, camera, updateCamera, transitionTo } from './core/camera.js'
+import { initCamera, camera, updateCamera, transitionTo, resetView } from './core/camera.js'
 import { state } from './state.js'
 import { Star } from './entities/Star.js'
 import { Starfield } from './entities/Starfield.js'
 import { Nebula } from './entities/Nebula.js'
 import { Galaxy } from './entities/Galaxy.js'
 import { ShootingStars } from './entities/ShootingStars.js'
+import { Supernova } from './entities/Supernova.js'
 import { Planet } from './entities/Planet.js'
 import { AsteroidBelt } from './entities/AsteroidBelt.js'
 import { Station } from './entities/Station.js'
@@ -53,6 +54,10 @@ threeScene.add(galaxy.group)
 const shootingStars = new ShootingStars()
 threeScene.add(shootingStars.group)
 
+// Supernovae — occasional bright colour flashes with expanding shockwave shells
+const supernova = new Supernova()
+threeScene.add(supernova.group)
+
 // All 5 planets, instantiated from config
 const planets = PLANET_CONFIGS.map(cfg => new Planet(cfg))
 for (const planet of planets) threeScene.add(planet.orbitGroup)
@@ -73,8 +78,9 @@ threeScene.add(comet.group)
 const darkZone = new DarkZone()
 threeScene.add(darkZone.mesh)
 
+const SHIP_START = new THREE.Vector3(0, 0, 70)   // ground-zero pose (R restores this)
 const ship = new Ship()
-ship.group.position.set(0, 0, 70)   // start between star outer glow (r=30) and GENESIS orbit (r=90)
+ship.group.position.copy(SHIP_START)   // start between star outer glow (r=30) and GENESIS orbit (r=90)
 state.shipPosition.copy(ship.group.position)   // seed so HUD/minimap are right pre-flight
 threeScene.add(ship.group)
 
@@ -85,12 +91,20 @@ ScanSystem.init({ scene: threeScene, ship })
 AutopilotSystem.init({ ship })
 HUD.init()
 
-// Quest objectives — one per scannable portfolio section (planets + station)
-QuestLog.init([...planets, station].map(b => ({
-  name:  b.config.name,
-  label: b.config.name,
-  sub:   BODIES[b.config.bodyKey]?.heading ?? '',
-})))
+// Quest objectives — one per scannable portfolio section (planets + station).
+// When every objective is done, reveal the easter-egg hint (the P pixel toggle).
+const secretHintEl = document.getElementById('secret-hint')
+QuestLog.init(
+  [...planets, station].map(b => ({
+    name:  b.config.name,
+    label: b.config.name,
+    sub:   BODIES[b.config.bodyKey]?.heading ?? '',
+  })),
+  () => {
+    secretHintEl?.classList.add('visible')
+    AudioSystem.play('moonUnlock')
+  },
+)
 
 // ── Audio — browsers block sound until a user gesture, so arm it on the first
 // keypress or click (whichever comes first), then the gate removes itself ────
@@ -108,10 +122,12 @@ window.addEventListener('pointerdown', armAudio)
 for (const body of [...planets, station]) {
   body.labelEl.classList.add('label-clickable')
   body.labelEl.addEventListener('click', () => {
-    if (state.cameraMode !== 'overview' || state.transitioning || !ship.ready) return
+    // Travel to a body by clicking its label — works from overview AND while
+    // already flying (so you can hop between planets), just not mid-scan/transition.
+    if (!ship.ready || state.transitioning || state.cameraMode === 'scan' || state.panelOpen) return
     AudioSystem.play('uiClick')
     AutopilotSystem.flyTo(body)
-    transitionTo('flight', ship)
+    if (state.cameraMode !== 'flight') transitionTo('flight', ship)
   })
 }
 
@@ -129,6 +145,15 @@ window.addEventListener('keydown', e => {
   // P — toggle retro pixelation (off by default; lets you preview and revert live)
   if (e.code === 'KeyP') {
     setPixelated(!isPixelated())
+  }
+  // R — restore the system to ground zero: cancel autopilot, dismiss any dossier,
+  // put the ship back at its start pose, and return to the ENTER overview framing.
+  // Progress (scanned objectives) is intentionally kept.
+  if (e.code === 'KeyR') {
+    AutopilotSystem.cancel()
+    ScanSystem.clearScan()
+    ship.resetTo(SHIP_START)
+    resetView()
   }
 })
 
@@ -153,6 +178,7 @@ function animate() {
   nebula.update(elapsed)
   galaxy.update(delta)
   shootingStars.update(deltaMs)
+  supernova.update(deltaMs)
 
   // Orbital motion runs on a slowed clock so planets/moons drift gently enough to
   // approach and scan. The comet keeps real time so its one-shot timing is intact.

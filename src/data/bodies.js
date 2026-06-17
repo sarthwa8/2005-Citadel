@@ -12,10 +12,9 @@ export const BODIES = {
 
   GENESIS: {
     heading: "About",
-    bio: "B.Tech ECE student at Punjab Engineering College building at the intersection of machine learning, computer vision, and systems engineering. My work spans medical image analysis (brain-tumor survival models on BraTS), vision-language model evaluation, and real-time edge AI — from training stacked deep-learning ensembles to deploying full-stack digital twins on a Raspberry Pi. I care about research that ships: models that run in under two seconds in the browser, and systems that hold up outside the notebook.",
+    bio: "I’m a student developer and researcher creating projects that actually contribute positively to the broader techspace. This is my portfolio website, inspired by Mass Effect’s galaxy map and No Man’s Sky. Fly around, explore, and learn more about me.",
     location: "Gurgaon, India",
-    status:
-      "Final-year B.Tech (ECE) @ PEC Chandigarh · Open to AI/ML & SDE roles",
+    status: "Final-year B.Tech @ PEC Chandigarh",
     scanRadius: 35,
   },
 
@@ -34,9 +33,10 @@ export const BODIES = {
         items: [
           "PyTorch & TensorFlow",
           "Computer Vision / CNNs",
-          "Graph Neural Nets)",
+          "Scikit-learn",
           "LLM Fine-Tuning",
           "RAG",
+          "Agentic AI",
         ],
       },
       {
@@ -62,7 +62,7 @@ export const BODIES = {
         role: "Research Intern",
         duration: "Jan 2026 – May 2026",
         description:
-          "Built a real-time digital twin for a 0.5 HP induction motor — fusing VFD electrical signals (Modbus RS-485), 1 kHz vibration (MPU-6050), and thermal data into a live React dashboard with bidirectional motor control over HTTPS. Trained a stacked CNN/LSTM/Transformer ensemble on the CWRU bearing dataset for four-class fault detection (97.1% accuracy, 0.971 F1), exported to ONNX for real-time edge inference on a Raspberry Pi 4.",
+          "Built a real-time digital twin for a 0.5 HP induction motor, fusing VFD electrical signals (Modbus RS-485), 1 kHz vibration (MPU-6050), and thermal data into a live React dashboard with bidirectional motor control over HTTPS. Trained a stacked CNN/LSTM/Transformer ensemble on the CWRU bearing dataset for four-class fault detection (97.1% accuracy, 0.971 F1), exported to ONNX for real-time edge inference on a Raspberry Pi 4.",
       },
     ],
   },
@@ -85,7 +85,7 @@ export const BODIES = {
         tech: "PyTorch · FastAPI · ROCm",
         description:
           "Brain-tumor clinical decision support. Contributed an SSC-based 3D convolution decomposition (trainable parameters down to 1.7M) and a radiomics class-overlap mitigation strategy for 3-class survival classification on BraTS 2020 — state-of-the-art accuracy vs. published baselines. Deployed as a browser-based tool with sub-2s end-to-end inference on AMD Instinct GPU via ROCm.",
-        link: "https://github.com/sarthwa8",
+        link: "https://github.com/sarthwa8/NeuroAccess",
       },
       {
         name: "PROJ_3",
@@ -93,7 +93,7 @@ export const BODIES = {
         tech: "FastAPI · Docker · Whisper · OpenStreetMap",
         description:
           "Vernacular healthcare AI backend. A high-concurrency FastAPI service running an OpenAI Whisper voice pipeline for vernacular speech (sub-300ms latency), wired to the OpenStreetMap API for location-aware hospital routing. Fully containerised via Docker for reproducible deployment.",
-        link: "https://github.com/sarthwa8",
+        link: "https://github.com/sarthwa8/GraminGPT-backend",
       },
       {
         name: "PROJ_4",
@@ -133,7 +133,7 @@ export const BODIES = {
     heading: "Contact",
     scanRadius: 35,
     email: "sarthakvs10@gmail.com",
-    linkedin: "www.linkedin.com/in/sarthak-sukhral-a82131263",
+    linkedin: "https://www.linkedin.com/in/sarthak-sukhral-a82131263",
     github: "https://github.com/sarthwa8",
     twitter: "",
     resume: "",
@@ -163,10 +163,10 @@ export const BODIES = {
   ],
 
   COMET: {
-    heading: "Currently Exploring",
+    heading: "Currently Exploring in my research:",
     items: [
       "Vision-Language Models & hallucination evaluation",
-      "Graph Neural Networks for survival analysis",
+      "Agentic Systems and Monitoring",
       "Edge AI & ONNX deployment",
       "Label-grounded fine-tuning",
     ],

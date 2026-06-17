@@ -8,13 +8,15 @@ import * as AudioSystem from '../systems/AudioSystem.js'
 let itemsEl, countEl, barEl
 let total = 0
 let done = 0
+let onAllComplete = null
 const items = new Map()   // body name → { el, completed }
 
-// objectives: [{ name, label, sub }]
-export function init(objectives) {
+// objectives: [{ name, label, sub }]; allCompleteCb fires once every objective is done.
+export function init(objectives, allCompleteCb) {
   itemsEl = document.getElementById('quest-items')
   countEl = document.getElementById('quest-count')
   barEl   = document.getElementById('quest-bar-fill')
+  onAllComplete = allCompleteCb || null
   total = objectives.length
   done = 0
 
@@ -43,6 +45,8 @@ export function markComplete(name) {
   gsap.fromTo(it.el,
     { backgroundColor: 'rgba(79, 214, 192, 0.28)' },
     { backgroundColor: 'rgba(79, 214, 192, 0)', duration: 1.3, ease: 'power2.out' })
+
+  if (done === total && onAllComplete) onAllComplete()
 }
 
 function refresh() {

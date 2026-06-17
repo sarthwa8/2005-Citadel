@@ -90,6 +90,16 @@ function closePanel() {
   transitionTo('flight', ship)
 }
 
+// Dismiss any open dossier WITHOUT moving the camera — the caller decides where
+// the camera goes next (used by the R reset, which then returns to overview).
+export function clearScan() {
+  if (!state.scanActive && !state.panelOpen) return
+  InfoPanel.hide()
+  state.scanActive = false
+  state.panelOpen = false
+  state.scanTarget = null
+}
+
 // Holographic scan: a wireframe sphere + a thin equatorial ring both materialize
 // around the target, scale up with a slight overshoot, rotate, then fade as the
 // dossier opens. Parented to the target so it tracks the body's orbital motion.

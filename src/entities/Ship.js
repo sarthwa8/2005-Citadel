@@ -188,7 +188,7 @@ export class Ship {
     const thrustFwd  = (InputSystem.isPressed('KeyW') || InputSystem.isPressed('ArrowUp')    ? 1 : 0)
                      - (InputSystem.isPressed('KeyS') || InputSystem.isPressed('ArrowDown')  ? 1 : 0)
     const thrustVert = (InputSystem.isPressed('Space') ? 1 : 0)
-                     - (InputSystem.isPressed('ControlLeft') ? 1 : 0)
+                     - (InputSystem.isPressed('ControlLeft') || InputSystem.isPressed('ControlRight') ? 1 : 0)
 
     // Turbo: hold Shift while thrusting forward → big speed + accel boost.
     const turbo = (InputSystem.isPressed('ShiftLeft') || InputSystem.isPressed('ShiftRight')) && thrustFwd > 0
@@ -248,6 +248,20 @@ export class Ship {
       const sc = 0.8 + drive * 1.5
       t.scale.setScalar(THREE.MathUtils.lerp(t.scale.x, sc, 0.2))
     }
+  }
+
+  // Reset to a start pose — "ground zero" for the R key. Clears velocity, heading,
+  // and visual bank/pitch so the ship doesn't drift after the reset. Progress
+  // (scans, objectives) is untouched — that lives in QuestLog / state, not here.
+  resetTo(pos) {
+    this.group.position.copy(pos)
+    this.group.quaternion.identity()
+    this._heading = 0
+    this._headingSynced = false
+    this._smoothYaw = 0
+    if (this.model) this.model.rotation.set(0, 0, 0)
+    state.shipVelocity.set(0, 0, 0)
+    state.shipPosition.copy(pos)
   }
 
   // Smoothly orient toward the travel direction (state.shipVelocity). A per-frame

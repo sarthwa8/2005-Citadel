@@ -7,8 +7,8 @@ import * as THREE from 'three'
 
 // Aurora ribbon colours — teal → blue → violet, matched to the title shimmer and
 // the nebula clouds so the landing and the system read as one palette.
-const AURORA_STOPS = [0x4FD6C0, 0x4A90D9, 0x9B59B6]
-const AMPLITUDE = 1.1
+const AURORA_STOPS = [0x37E0C6, 0x3A74E0, 0x8B4FE6]
+const AMPLITUDE = 1.0
 const BLEND     = 0.5
 
 export function initLanding(onEnter) {
@@ -38,19 +38,41 @@ export function initLanding(onEnter) {
   })
 }
 
-// ── SplitText: wrap each title glyph so CSS can stagger it in ─────────────────
+// ── DecryptedText: split the title into per-glyph spans, then scramble each one
+// through random glyphs and "lock" it to the real character left→right. Driven by
+// setInterval (not rAF) so it still plays in a backgrounded/preview tab. ──────────
+const DECRYPT_GLYPHS = '!<>-_\\/[]{}=+*^?#%@ABCDEFGHJKLMNPQRSTUVWXYZ0123456789'
+const rndGlyph = () => DECRYPT_GLYPHS[(Math.random() * DECRYPT_GLYPHS.length) | 0]
+
 function splitTitle() {
   const title = document.getElementById('landing-title')
   const text = title.textContent
   title.textContent = ''
+  const spans = []
   let i = 0
   for (const ch of text) {
     const span = document.createElement('span')
     span.className = 'char'
-    span.textContent = ch === ' ' ? ' ' : ch
     span.style.setProperty('--i', i++)
+    if (ch === ' ') { span.textContent = ' '; span._settled = true }
+    else { span._final = ch; span.textContent = rndGlyph() }
     title.appendChild(span)
+    spans.push(span)
   }
+
+  const start = performance.now()
+  const PER = 80      // ms before each successive glyph locks in
+  const SETTLE = 420  // base scramble time
+  const iv = setInterval(() => {
+    const t = performance.now() - start
+    let allDone = true
+    spans.forEach((span, idx) => {
+      if (span._settled) return
+      if (t >= idx * PER + SETTLE) { span.textContent = span._final; span._settled = true }
+      else { span.textContent = rndGlyph(); allDone = false }
+    })
+    if (allDone) clearInterval(iv)
+  }, 45)
 }
 
 // ── Aurora: flowing ribbons via a fullscreen fragment shader (React Bits port) ─
@@ -125,7 +147,12 @@ const AURORA_FRAG = /* glsl */`
     float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
 
     vec3 auroraColor = intensity * rampColor;
-    fragColor = vec4(auroraColor * auroraAlpha, auroraAlpha);
+
+    // Fade out toward the left/right edges so it reads as a contained curtain,
+    // and ease overall brightness for the darker landing.
+    float edge = smoothstep(0.0, 0.24, uv.x) * smoothstep(1.0, 0.76, uv.x);
+    float k = 0.9 * edge;
+    fragColor = vec4(auroraColor * auroraAlpha * k, auroraAlpha * k);
   }
 `
 

@@ -31,7 +31,7 @@ export function getRawThrust() {
   if (keys.has('KeyA') || keys.has('ArrowLeft'))  v.x -= 1
   if (keys.has('KeyD') || keys.has('ArrowRight')) v.x += 1
   if (keys.has('Space'))                          v.y += 1
-  if (keys.has('ControlLeft'))                    v.y -= 1
+  if (keys.has('ControlLeft') || keys.has('ControlRight')) v.y -= 1
   if (v.lengthSq() > 1) v.normalize()
   return v
 }

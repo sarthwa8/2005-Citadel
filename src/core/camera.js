@@ -150,6 +150,17 @@ export function transitionTo(newMode, targetBody = null) {
   })
 }
 
+// Reset to the default overview framing (bound to R in main.js). From flight or
+// scan it tweens back to home; from overview it just re-centres the drag-orbit.
+export function resetView() {
+  if (state.cameraMode !== 'overview') {
+    transitionTo('overview')
+  } else {
+    azimuth = 0
+    elevation = HOME_ELEVATION
+  }
+}
+
 // ── Per-frame controller ─────────────────────────────────────────────────────
 
 export function updateCamera(ship, deltaMs = 16.7) {

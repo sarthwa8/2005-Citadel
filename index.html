@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Citadel System</title>
+  <title>Sarthak Sukhral — Interactive Portfolio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -25,6 +25,9 @@
     </div>
 
     <div id="scan-prompt"><kbd>E</kbd><span>SCAN <b class="scan-target"></b></span></div>
+
+    <!-- Easter-egg reveal — hidden until all objectives are complete -->
+    <div id="secret-hint"><kbd>P</kbd><span>SECRET UNLOCKED · toggle PIXEL MODE</span></div>
   </div>
 
   <!-- ── Scan dossier (Mass Effect style) ────────────────────────────── -->
@@ -32,7 +35,7 @@
     <div id="panel-designation"></div>
     <div id="panel-tab"><span id="panel-badge"></span></div>
     <div id="panel-body"></div>
-    <div id="panel-footer"><span class="footer-dot"></span> SCAN COMPLETE · <span id="panel-timestamp"></span></div>
+    <div id="panel-footer"><span class="footer-dot"></span> SCAN COMPLETE</div>
     <button id="panel-close">CLOSE</button>
   </div>
 
@@ -52,17 +55,21 @@
     <canvas id="galaxy-canvas"></canvas>
     <div id="landing-vignette"></div>
     <div id="landing-content">
-      <h1 id="landing-title">THE CITADEL SYSTEM</h1>
-      <p class="landing-tagline">An interactive star-system portfolio</p>
-      <div class="landing-controls">
-        <span><kbd>DRAG</kbd> orbit</span>
-        <span><kbd>CLICK</kbd> travel</span>
-        <span><kbd>TAB</kbd> pilot</span>
-        <span><kbd>WASD</kbd> fly</span>
-        <span><kbd>SHIFT</kbd> boost</span>
-        <span><kbd>E</kbd> scan</span>
+      <div id="landing-card">
+        <h1 id="landing-title">Sarthak Sukhral</h1>
+        <p class="landing-tagline">An Interactive Interstellar Portfolio</p>
+        <div class="landing-controls">
+          <span><kbd>DRAG</kbd> orbit view</span>
+          <span><kbd>CLICK</kbd> a label to travel</span>
+          <span><kbd>TAB</kbd> pilot the ship</span>
+          <span><kbd>WASD</kbd> fly · <kbd>A</kbd><kbd>D</kbd> turn</span>
+          <span><kbd>SPACE</kbd>/<kbd>CTRL</kbd> up / down</span>
+          <span><kbd>SHIFT</kbd>+<kbd>W</kbd> boost</span>
+          <span><kbd>E</kbd> scan a world</span>
+          <span><kbd>R</kbd> reset view</span>
+        </div>
+        <button id="enter-btn"><span>ENTER</span></button>
       </div>
-      <button id="enter-btn"><span>ENTER</span></button>
     </div>
   </div>
 

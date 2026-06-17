@@ -5,14 +5,13 @@ import { BODIES } from '../data/bodies.js'
 // list); moons show their specific entry (skills list, job, project, degree).
 // Close is handled by ScanSystem (E/Escape/click) via the onClose callback.
 
-let panelEl, designationEl, badgeEl, bodyEl, timestampEl
+let panelEl, designationEl, badgeEl, bodyEl
 
 export function init(onClose) {
   panelEl       = document.getElementById('info-panel')
   designationEl = document.getElementById('panel-designation')
   badgeEl       = document.getElementById('panel-badge')
   bodyEl        = document.getElementById('panel-body')
-  timestampEl   = document.getElementById('panel-timestamp')
   document.getElementById('panel-close').addEventListener('click', onClose)
 }
 
@@ -36,7 +35,6 @@ export function show(target) {
   designationEl.textContent = designation
   badgeEl.textContent = badge.toUpperCase()
   bodyEl.innerHTML = content ? buildBody(content, target) : '<p>NO DATA</p>'
-  timestampEl.textContent = new Date().toLocaleTimeString()
   panelEl.classList.remove('hidden')
 }
 
@@ -50,6 +48,9 @@ const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 const line = (k, v) => `<div class="panel-line"><span class="panel-key">${esc(k)}</span> ${esc(v)}</div>`
 const linkLine = (k, v, href) =>
   `<div class="panel-line"><span class="panel-key">${esc(k)}</span> <a class="panel-link" href="${esc(href)}" target="_blank" rel="noopener">${esc(v)}</a></div>`
+// Prefix bare URLs with https:// so a schemeless value ("www.x.com/..") isn't
+// treated as a relative path (which would resolve to localhost/www.x.com/..).
+const extUrl = u => /^https?:\/\//i.test(u) ? u : `https://${u}`
 
 function buildBody(content, target) {
   const parts = []
@@ -72,17 +73,17 @@ function buildBody(content, target) {
     parts.push(`<ul class="panel-list">${content.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>`)
   }
   if (content.link) {
-    parts.push(`<div class="panel-line"><a class="panel-link" href="${esc(content.link)}" target="_blank" rel="noopener">[ VIEW PROJECT ]</a></div>`)
+    parts.push(`<div class="panel-line"><a class="panel-link" href="${esc(extUrl(content.link))}" target="_blank" rel="noopener">[ VIEW PROJECT ]</a></div>`)
   }
 
   // Contact section (NOVARA). Links render as anchors once real URLs replace
-  // the placeholders; email gets a mailto.
+  // the placeholders; email gets a mailto. extUrl() guards schemeless URLs.
   if (content.email)    parts.push(linkLine('EMAIL', content.email, `mailto:${content.email}`))
-  if (content.linkedin) parts.push(linkLine('LINKEDIN', content.linkedin, content.linkedin))
-  if (content.github)   parts.push(linkLine('GITHUB', content.github, content.github))
+  if (content.linkedin) parts.push(linkLine('LINKEDIN', content.linkedin, extUrl(content.linkedin)))
+  if (content.github)   parts.push(linkLine('GITHUB', content.github, extUrl(content.github)))
   if (content.twitter)  parts.push(line('TWITTER', content.twitter))
   if (content.resume) {
-    parts.push(`<div class="panel-line"><a class="panel-link" href="${esc(content.resume)}" target="_blank" rel="noopener">[ VIEW RESUME ]</a></div>`)
+    parts.push(`<div class="panel-line"><a class="panel-link" href="${esc(extUrl(content.resume))}" target="_blank" rel="noopener">[ VIEW RESUME ]</a></div>`)
   }
 
   // Planet with satellites — list what the scan just unlocked.
