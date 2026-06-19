@@ -71,7 +71,7 @@ canvas { display: block; }
   z-index: 5;
 }
 
-#hud-top-right { position: absolute; top: 18px; right: 18px; width: 250px; }
+#hud-top-left { position: absolute; top: 18px; left: 18px; width: 250px; }
 
 /* Quest / objectives checklist */
 #quest-log { padding: 14px 16px; }
