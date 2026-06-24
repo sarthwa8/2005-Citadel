@@ -6,7 +6,7 @@ import * as THREE from 'three'
 export const PLANET_CONFIGS = [
   {
     name: 'GENESIS', bodyKey: 'GENESIS',
-    radius: 6, orbitRadius: 90, orbitSpeed: 0.00025, orbitAngle: 0.9,
+    radius: 6, orbitRadius: 120, orbitSpeed: 0.00025, orbitAngle: 0.9,
     orbitInclination: 0, axialTilt: 0.26, rotationSpeed: 0.0008, isGasGiant: false,
     colorMap:        '/textures/aerial_beach_01_diff_1k.jpg',
     normalMap:       '/textures/aerial_beach_01_nor_gl_1k.png',
@@ -17,7 +17,7 @@ export const PLANET_CONFIGS = [
   },
   {
     name: 'SYNTHEX', bodyKey: 'SYNTHEX',
-    radius: 10, orbitRadius: 155, orbitSpeed: 0.00018, orbitAngle: 2.4,
+    radius: 10, orbitRadius: 185, orbitSpeed: 0.00018, orbitAngle: 2.4,
     orbitInclination: 0, axialTilt: 0.45, rotationSpeed: 0.0012, isGasGiant: true,
     hasRing: true,
     colorMap:        '/textures/mossy_rock_diff_1k.jpg',
@@ -36,7 +36,7 @@ export const PLANET_CONFIGS = [
   },
   {
     name: 'ACADEMY', bodyKey: 'ACADEMY',
-    radius: 6, orbitRadius: 155, orbitSpeed: 0.00018, orbitAngle: 5.1,
+    radius: 6, orbitRadius: 290, orbitSpeed: 0.00018, orbitAngle: 5.1,
     orbitInclination: 0.14, axialTilt: 0.18, rotationSpeed: 0.0007, isGasGiant: false,
     colorMap:        '/textures/rocks_ground_04_diff_1k.jpg',
     normalMap:       '/textures/rocks_ground_04_nor_gl_1k.png',
@@ -51,7 +51,7 @@ export const PLANET_CONFIGS = [
   },
   {
     name: 'EXPEDITION', bodyKey: 'EXPEDITION',
-    radius: 7, orbitRadius: 245, orbitSpeed: 0.00012, orbitAngle: 1.2,
+    radius: 7, orbitRadius: 375, orbitSpeed: 0.00012, orbitAngle: 1.2,
     orbitInclination: -0.1, axialTilt: 0.35, rotationSpeed: 0.0009, isGasGiant: false,
     colorMap:        '/textures/red_laterite_soil_stones_diff_1k.jpg',
     normalMap:       '/textures/red_laterite_soil_stones_nor_gl_1k.png',
@@ -66,7 +66,7 @@ export const PLANET_CONFIGS = [
   },
   {
     name: 'CODEX', bodyKey: 'CODEX',
-    radius: 14, orbitRadius: 285, orbitSpeed: 0.00009, orbitAngle: 3.8,
+    radius: 14, orbitRadius: 460, orbitSpeed: 0.00009, orbitAngle: 3.8,
     orbitInclination: 0, axialTilt: 0.22, rotationSpeed: 0.0006, isGasGiant: false,
     colorMap:        '/textures/rock_embedded_concrete_wall_diff_1k.jpg',
     normalMap:       '/textures/rock_embedded_concrete_wall_nor_gl_1k.png',
@@ -85,12 +85,12 @@ export const PLANET_CONFIGS = [
   },
 ]
 
-// NOVARA station — Contact. Rides the same orbit ring as CODEX (285) but offset
+// NOVARA station — Contact. Rides the same orbit ring as CODEX (460) but offset
 // by angle and inclined, so they never meet. `radius` is the normalized model
 // bounding radius — the scan camera and label height key off it.
 export const STATION_CONFIG = {
   name: 'NOVARA', bodyKey: 'NOVARA',
-  radius: 12, orbitRadius: 285, orbitSpeed: 0.00009, orbitAngle: 0.6,
+  radius: 12, orbitRadius: 460, orbitSpeed: 0.00009, orbitAngle: 0.6,
   orbitInclination: 0.21,
   scanRadius: 35, labelColor: '#A8B2BC',
 }

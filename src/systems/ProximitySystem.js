@@ -57,11 +57,11 @@ export function update() {
     if (cd < nearestDist) { nearest = comet; nearestDist = cd }
   }
 
-  // Belt turbulence flag — ship inside the asteroid torus (ring 192–208, near
+  // Belt turbulence flag — ship inside the asteroid torus (ring ~222–238, near
   // the belt plane). camera.js reads this and jitters the chase camera.
   const radial = Math.hypot(state.shipPosition.x, state.shipPosition.z)
   state.inAsteroidBelt =
-    radial > 192 && radial < 208 && Math.abs(state.shipPosition.y) < 12
+    radial > 218 && radial < 242 && Math.abs(state.shipPosition.y) < 12
 
   state.nearestBody = nearest
   state.nearestBodyDistance = nearestDist

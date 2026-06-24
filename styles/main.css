@@ -316,31 +316,48 @@ canvas { display: block; }
    CSS2D BODY LABELS
    ════════════════════════════════════════════════════════════════════════ */
 
+/* Holographic readouts floating in the void — bare text, no chips. Thin weight +
+   wide cinematic tracking + a soft layered glow (no hard drop shadow) keeps the
+   mysterious star-map vibe while reading as deliberate, not default. */
 .planet-label {
   font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 2.5px;
-  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 3.5px;
+  padding-left: 3.5px;   /* offset the tracking so the first glyph isn't clipped */
   pointer-events: none;
   text-transform: uppercase;
-  text-shadow: 0 0 10px currentColor, 0 1px 2px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  opacity: 0;            /* hidden until revealed by proximity (flight) or hover (overview) */
+  transition: opacity 0.4s ease, text-shadow 0.25s, letter-spacing 0.25s;
+  text-shadow:
+    0 0 7px color-mix(in srgb, currentColor 65%, transparent),
+    0 0 3px rgba(0, 0, 0, 0.85);   /* soft dark halo for legibility, not a drop shadow */
 }
-.label-clickable { pointer-events: all; cursor: pointer; transition: text-shadow 0.2s; }
-.label-clickable:hover { text-shadow: 0 0 16px currentColor, 0 0 6px currentColor; }
+.planet-label.label-shown { opacity: 0.66; }
+.label-clickable { pointer-events: none; }
+.label-clickable.label-shown { pointer-events: all; cursor: pointer; }   /* only clickable while visible */
+.label-clickable.label-shown:hover {
+  opacity: 1;
+  text-shadow: 0 0 12px currentColor, 0 0 26px color-mix(in srgb, currentColor 45%, transparent), 0 0 3px rgba(0, 0, 0, 0.85);
+  letter-spacing: 4.5px;
+}
 
 .moon-label {
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 500;
-  letter-spacing: 1.5px;
-  padding: 1px 5px;
+  letter-spacing: 3px;
+  padding-left: 3px;
   pointer-events: none;
   text-transform: uppercase;
-  text-shadow: 0 0 7px currentColor, 0 1px 2px rgba(0, 0, 0, 0.8);
-  opacity: 0.92;
+  white-space: nowrap;
+  opacity: 0;            /* hidden until the ship is near (flight only) */
+  transition: opacity 0.4s ease;
+  text-shadow: 0 0 8px currentColor, 0 0 3px rgba(0, 0, 0, 0.85);
 }
-.moon-label.locked { opacity: 0.4; letter-spacing: 2px; }
+.moon-label.label-shown { opacity: 0.85; }
+.moon-label.locked.label-shown { opacity: 0.36; }
 
 /* ════════════════════════════════════════════════════════════════════════
    LOADING SCREEN  (after ENTER — holds the system until assets are ready;

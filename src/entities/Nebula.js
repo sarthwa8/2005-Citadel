@@ -58,27 +58,27 @@ const FRAG = /* glsl */`
     float warp   = fbm(d * 4.2 + base * 1.5 + vec3(t, 0.0, -t));
     float region = fbm(d * 0.9 + 3.0);
 
-    // Soft, feathered density — wisps fade gently, no circles, no hard edges.
-    float density = smoothstep(0.46, 0.96, base * 0.6 + warp * 0.4);
+    // Wider, softer density → more of the sky carries colour (Guardians-of-the-
+    // Galaxy vibe — vibrant, not a faint wash).
+    float density = smoothstep(0.40, 0.94, base * 0.62 + warp * 0.38);
 
-    vec3 violet  = vec3(0.40, 0.16, 0.62);   // base mood
-    vec3 indigo  = vec3(0.13, 0.13, 0.50);
-    vec3 blue    = vec3(0.10, 0.24, 0.58);
-    vec3 teal    = vec3(0.07, 0.42, 0.46);
-    vec3 magenta = vec3(0.55, 0.14, 0.46);
-    vec3 green   = vec3(0.12, 0.44, 0.28);
-    vec3 gold    = vec3(0.56, 0.40, 0.16);
+    // Saturated, alien GotG palette.
+    vec3 indigo  = vec3(0.20, 0.10, 0.66);
+    vec3 violet  = vec3(0.58, 0.16, 0.92);
+    vec3 blue    = vec3(0.10, 0.40, 0.95);
+    vec3 cyan    = vec3(0.05, 0.72, 0.78);
+    vec3 magenta = vec3(0.95, 0.16, 0.62);
+    vec3 orange  = vec3(0.98, 0.46, 0.16);
 
     // Multi-region colour — reuse the 3 fields (no extra fbm taps) for varied hues.
-    vec3 col = mix(indigo, violet, smoothstep(0.30, 0.85, region));
-    col = mix(col, blue,    smoothstep(0.30, 0.75, warp)          * 0.55);
-    col = mix(col, teal,    smoothstep(0.55, 0.95, region)        * 0.50);
-    col = mix(col, green,   smoothstep(0.62, 0.96, base)          * 0.45);
-    col = mix(col, magenta, smoothstep(0.64, 1.0,  warp)          * 0.42);
-    col = mix(col, gold,    smoothstep(0.74, 1.0,  region * warp) * 0.22);
+    vec3 col = mix(indigo, violet, smoothstep(0.25, 0.82, region));
+    col = mix(col, blue,    smoothstep(0.28, 0.74, warp)          * 0.60);
+    col = mix(col, cyan,    smoothstep(0.50, 0.92, region)        * 0.60);
+    col = mix(col, magenta, smoothstep(0.55, 1.0,  base)          * 0.60);
+    col = mix(col, orange,  smoothstep(0.72, 1.0,  region * warp) * 0.40);
 
-    // Brighter filament cores for subtle colour pops (still soft, never a blob).
-    float glow = pow(density, 1.5);
+    // Bright filament cores; gentler power so the colour spreads further.
+    float glow = pow(density, 1.3);
     gl_FragColor = vec4(col * glow * uIntensity, 1.0);
   }
 `
@@ -88,7 +88,7 @@ export class Nebula {
     const geo = new THREE.SphereGeometry(2400, 48, 48)
     this.material = new THREE.ShaderMaterial({
       uniforms: {
-        uIntensity: { value: 0.95 },
+        uIntensity: { value: 1.3 },
         uTime:      { value: 0 },
       },
       vertexShader: VERT,

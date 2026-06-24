@@ -1,8 +1,11 @@
 import * as THREE from 'three'
 
 export const state = {
-  // Camera
-  cameraMode: 'overview',
+  // Camera. cameraMode: 'flight' | 'scan' (the old fixed 'overview' map is gone).
+  // flightCam picks the flight framing: 'map' = ME-style cinematic iso follow,
+  // 'drive' = close behind-the-ship chase. Tab toggles them.
+  cameraMode: 'flight',
+  flightCam: 'map',
   transitioning: false,
 
   // Ship

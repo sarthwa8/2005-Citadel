@@ -2,15 +2,15 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 
-// The asteroid belt sits between the inner planets (SYNTHEX/ACADEMY at orbit 155)
-// and the outer ones (EXPEDITION 245, CODEX 285), on a torus of ring radius 200.
+// The asteroid belt sits between SYNTHEX (orbit 185) and ACADEMY (orbit 290), on a
+// torus of ring radius 230. (Outer planets: EXPEDITION 375, CODEX 460.)
 // All 200 rocks share ONE geometry + material via InstancedMesh, so the whole belt
 // is a single draw call. Four larger GOLD asteroids ride the same ring as scannable
 // "achievement" markers (bound to ASTEROIDS data in a later phase) — they're emissive
 // so they catch the eye and bloom.
 const BELT_COUNT       = 200
 const GOLD_COUNT       = 4
-const BELT_RING_RADIUS = 200
+const BELT_RING_RADIUS = 230
 const BELT_TUBE        = 8       // vertical + radial spread of the belt
 const BELT_ROT_SPEED   = 0.00002 // rad/ms — a slow orbital drift, slower than any planet
 

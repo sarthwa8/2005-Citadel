@@ -7,20 +7,25 @@ export let camera
 
 // ── Tuning ───────────────────────────────────────────────────────────────────
 
-// Ship-relative offset for the chase camera. The ship is normalized to ~16 units
-// long (Ship.SHIP_LENGTH), so the camera sits ~2 ship-lengths back and a bit
-// above to frame the whole hull with a slight top-down read of the wings.
+// MAP camera (default, ENTER) — Mass Effect galaxy-map style: a LOW cinematic
+// isometric angle that looks across the orbital plane and FOLLOWS the ship as it
+// flies. Drag rotates the view; wheel zooms.
+const MAP_PITCH        = 0.55   // rad above the orbital plane (~31°): low + cinematic
+const MAP_DIST_DEFAULT = 260    // zoomed out enough to read the surrounding system
+const MAP_DIST_MIN     = 110
+const MAP_DIST_MAX     = 640
+const MAP_ROT_SPEED    = 0.005  // rad of rotation per px of horizontal drag
+const MAP_ZOOM_SPEED   = 0.5    // mapDist change per wheel deltaY unit
+
+// DRIVE camera (Tab) — the close behind-the-ship chase cam (the original cockpit-ish
+// driving view). Offset is rotated by the ship's quaternion so W is always forward.
 const CHASE_OFFSET = new THREE.Vector3(0, 9, 34)
 
-const OVERVIEW_POS    = new THREE.Vector3(0, 500, 200)
-const OVERVIEW_RADIUS = OVERVIEW_POS.length()
 const TRANSITION_SECS = 1.1
-
 const BASE_FOV  = 60
 const TURBO_FOV = 82
 
-// Scan mode: camera parks at radius*2.5 from the body (floored so tiny moons
-// don't put it inside the label), elevated, drifting slowly around it.
+// Scan mode: camera parks at radius*2.5 from the body, elevated, drifting slowly.
 const SCAN_DIST_FACTOR   = 2.5
 const SCAN_MIN_DIST      = 14
 const SCAN_HEIGHT_FACTOR = 0.6
@@ -30,28 +35,38 @@ const UP = new THREE.Vector3(0, 1, 0)
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-// Overview drag-orbit (azimuth/elevation around the origin at fixed radius)
-const HOME_ELEVATION = Math.asin(OVERVIEW_POS.y / OVERVIEW_RADIUS)
-let azimuth = 0
-let elevation = HOME_ELEVATION
+// Map camera: user-controlled rotation (drag) + zoom (wheel).
+let mapAzimuth = 0
+let mapDist = MAP_DIST_DEFAULT
 let dragging = false
 let lastPointerX = 0
-let lastPointerY = 0
 
-// Body the scan camera is orbiting + its accumulated drift angle
+// Body the scan camera is orbiting + its accumulated drift angle.
 let scanRef = null
 let scanAngle = 0
 
-// Where the camera is looking. Updated continuously by every mode so GSAP can
-// tween it during transitions without a visible snap.
-const _lookTarget = new THREE.Vector3()
-
-// Reusable temporaries
+// Where the camera is looking. Tweened by GSAP during transitions.
+const _lookTarget  = new THREE.Vector3()
 const _desiredPos  = new THREE.Vector3()
 const _offsetWorld = new THREE.Vector3()
 const _fwd         = new THREE.Vector3()
 const _dirAway     = new THREE.Vector3()
 const _wp          = new THREE.Vector3()
+const _isoDir      = new THREE.Vector3()
+
+// World-locked iso offset (unit dir × mapDist) from the followed point to the map
+// camera. Not tied to the ship's heading — mapAzimuth is user-controlled (drag).
+function mapCamOffset() {
+  const cp = Math.cos(MAP_PITCH)
+  return _isoDir
+    .set(Math.sin(mapAzimuth) * cp, Math.sin(MAP_PITCH), Math.cos(mapAzimuth) * cp)
+    .multiplyScalar(mapDist)
+}
+
+// Point the camera follows (ship if it exists, else the system start point).
+function followPoint(ship) {
+  return ship?.group ? ship.group.position : _wp.set(0, 0, 70)
+}
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
@@ -63,51 +78,46 @@ export function initCamera() {
     5000
   )
 
-  setOverview()
+  // Boot straight into the map view — there's no separate top-down overview.
+  state.cameraMode = 'flight'
+  state.flightCam = 'map'
+  _lookTarget.set(0, 0, 70)
+  camera.position.copy(_lookTarget).add(mapCamOffset())
+  camera.lookAt(_lookTarget)
 
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
   })
 
-  // Overview drag-to-orbit. Attached to the WebGL canvas (the CSS2D overlay has
-  // pointer-events:none) so HUD buttons never start a drag.
+  // Drag-to-rotate + wheel-to-zoom — only in the map view (drive cam auto-follows).
   const el = renderer.domElement
   el.addEventListener('pointerdown', e => {
-    if (state.cameraMode !== 'overview' || state.transitioning) return
+    if (state.transitioning || state.cameraMode !== 'flight' || state.flightCam !== 'map') return
     dragging = true
     lastPointerX = e.clientX
-    lastPointerY = e.clientY
   })
   window.addEventListener('pointermove', e => {
     if (!dragging) return
-    azimuth   -= (e.clientX - lastPointerX) * 0.005
-    elevation += (e.clientY - lastPointerY) * 0.003
-    elevation = THREE.MathUtils.clamp(elevation, 0.15, 1.45)
+    mapAzimuth -= (e.clientX - lastPointerX) * MAP_ROT_SPEED
     lastPointerX = e.clientX
-    lastPointerY = e.clientY
   })
   window.addEventListener('pointerup', () => { dragging = false })
+
+  el.addEventListener('wheel', e => {
+    if (state.cameraMode !== 'flight' || state.flightCam !== 'map') return
+    e.preventDefault()
+    mapDist = THREE.MathUtils.clamp(mapDist + e.deltaY * MAP_ZOOM_SPEED, MAP_DIST_MIN, MAP_DIST_MAX)
+  }, { passive: false })
 
   return camera
 }
 
-// Snap to the home overview framing (used at boot; Tab uses transitionTo).
-export function setOverview() {
-  azimuth = 0
-  elevation = HOME_ELEVATION
-  camera.position.copy(OVERVIEW_POS)
-  _lookTarget.set(0, 0, 0)
-  camera.lookAt(_lookTarget)
-}
-
 // ── Mode transitions (GSAP) ──────────────────────────────────────────────────
 
-// Tween the camera into a new mode. targetBody: the ship for 'flight', the
-// scanned body for 'scan'. Mode flips immediately (systems key off it); the
-// per-frame controller below takes over when the tween lands. Preemptive: a
-// new transition kills an in-flight one and retargets (e.g. closing the scan
-// panel before the scan tween has landed must still return to flight).
+// Tween the camera into a new mode/framing. 'flight' frames per state.flightCam
+// (map | drive); 'scan' orbits the scanned body. The per-frame controller takes
+// over when the tween lands.
 export function transitionTo(newMode, targetBody = null) {
   gsap.killTweensOf(camera.position)
   gsap.killTweensOf(_lookTarget)
@@ -118,18 +128,9 @@ export function transitionTo(newMode, targetBody = null) {
   const destPos = new THREE.Vector3()
   const destLook = new THREE.Vector3()
 
-  if (newMode === 'overview') {
+  if (newMode === 'flight') {
     scanRef = null
-    azimuth = 0
-    elevation = HOME_ELEVATION
-    destPos.copy(OVERVIEW_POS)
-    destLook.set(0, 0, 0)
-  } else if (newMode === 'flight') {
-    scanRef = null
-    destPos.copy(CHASE_OFFSET).applyQuaternion(targetBody.group.quaternion)
-      .add(targetBody.group.position)
-    _fwd.set(0, 0, 1).applyQuaternion(targetBody.group.quaternion)
-    destLook.copy(targetBody.group.position).addScaledVector(_fwd, 6)
+    flightDest(targetBody, destPos, destLook)
   } else if (newMode === 'scan') {
     scanRef = targetBody
     scanAngle = 0
@@ -139,26 +140,35 @@ export function transitionTo(newMode, targetBody = null) {
 
   gsap.to(camera.position, {
     x: destPos.x, y: destPos.y, z: destPos.z,
-    duration: TRANSITION_SECS,
-    ease: 'power2.inOut',
+    duration: TRANSITION_SECS, ease: 'power2.inOut',
     onComplete: () => { state.transitioning = false },
   })
   gsap.to(_lookTarget, {
     x: destLook.x, y: destLook.y, z: destLook.z,
-    duration: TRANSITION_SECS,
-    ease: 'power2.inOut',
+    duration: TRANSITION_SECS, ease: 'power2.inOut',
   })
 }
 
-// Reset to the default overview framing (bound to R in main.js). From flight or
-// scan it tweens back to home; from overview it just re-centres the drag-orbit.
-export function resetView() {
-  if (state.cameraMode !== 'overview') {
-    transitionTo('overview')
+// Destination pose for flight, depending on the active sub-cam (map | drive).
+function flightDest(ship, destPos, destLook) {
+  if (state.flightCam === 'drive' && ship?.ready) {
+    destPos.copy(CHASE_OFFSET).applyQuaternion(ship.group.quaternion).add(ship.group.position)
+    _fwd.set(0, 0, 1).applyQuaternion(ship.group.quaternion)
+    destLook.copy(ship.group.position).addScaledVector(_fwd, 6)
   } else {
-    azimuth = 0
-    elevation = HOME_ELEVATION
+    const p = followPoint(ship)
+    destPos.copy(p).add(mapCamOffset())
+    destLook.copy(p)
   }
+}
+
+// Reset to the default MAP framing (bound to R in main.js). Recentres rotation +
+// zoom and tweens back from wherever (drive / scan / rotated map).
+export function resetView(ship = null) {
+  mapAzimuth = 0
+  mapDist = MAP_DIST_DEFAULT
+  state.flightCam = 'map'
+  transitionTo('flight', ship)
 }
 
 // ── Per-frame controller ─────────────────────────────────────────────────────
@@ -172,43 +182,39 @@ export function updateCamera(ship, deltaMs = 16.7) {
     return
   }
 
-  if (state.cameraMode === 'flight') {
-    if (!ship?.ready) return
-
-    // Rotate the local chase offset into world space using the ship's quaternion
-    _offsetWorld.copy(CHASE_OFFSET).applyQuaternion(ship.group.quaternion)
-    _desiredPos.copy(ship.group.position).add(_offsetWorld)
-    camera.position.lerp(_desiredPos, 0.08)
-
-    // Look at the ship's visual center (+Z*16 from group origin ≈ mid-hull at scale 1)
-    _fwd.set(0, 0, 1).applyQuaternion(ship.group.quaternion)
-    _lookTarget.copy(ship.group.position).addScaledVector(_fwd, 6)
-    camera.lookAt(_lookTarget)
-
-    // Belt turbulence — jitter applied after lookAt so it survives the frame.
-    // Tiny amplitude: reads as rattling, not displacement.
-    if (state.inAsteroidBelt) {
-      const shake = (Math.random() - 0.5) * 0.08
-      camera.position.x += shake
-      camera.position.y += shake * 0.5
-    }
-
-  } else if (state.cameraMode === 'scan') {
+  if (state.cameraMode === 'scan') {
     if (!scanRef) return
-    // Slow drift around the live body position (it keeps orbiting HELIOS).
     scanAngle += SCAN_ORBIT_SPEED * deltaMs
     scanOrbitPosition(scanAngle, _desiredPos)
     camera.position.lerp(_desiredPos, 0.06)
     _lookTarget.copy(_wp)
     camera.lookAt(_lookTarget)
 
-  } else {
-    // Overview: drag-orbit around the origin at fixed radius.
-    camera.position.setFromSphericalCoords(
-      OVERVIEW_RADIUS, Math.PI / 2 - elevation, azimuth,
-    )
-    _lookTarget.set(0, 0, 0)
+  } else if (state.flightCam === 'drive') {
+    // Close behind-the-ship chase cam.
+    if (!ship?.ready) return
+    _offsetWorld.copy(CHASE_OFFSET).applyQuaternion(ship.group.quaternion)
+    _desiredPos.copy(ship.group.position).add(_offsetWorld)
+    camera.position.lerp(_desiredPos, 0.08)
+    _fwd.set(0, 0, 1).applyQuaternion(ship.group.quaternion)
+    _lookTarget.copy(ship.group.position).addScaledVector(_fwd, 6)
     camera.lookAt(_lookTarget)
+
+  } else {
+    // MAP: low cinematic iso angle following the ship's position (user rotates via
+    // drag, zooms via wheel).
+    const p = followPoint(ship)
+    _desiredPos.copy(p).add(mapCamOffset())
+    camera.position.lerp(_desiredPos, 0.1)
+    _lookTarget.lerp(p, 0.12)
+    camera.lookAt(_lookTarget)
+  }
+
+  // Belt turbulence — jitter applied after lookAt so it survives the frame.
+  if (state.cameraMode === 'flight' && state.inAsteroidBelt) {
+    const shake = (Math.random() - 0.5) * 0.08
+    camera.position.x += shake
+    camera.position.y += shake * 0.5
   }
 
   // Speed-rush FOV: widen during turbo or autopilot cruise, ease back otherwise.
@@ -221,8 +227,7 @@ export function updateCamera(ship, deltaMs = 16.7) {
 }
 
 // Camera position on the scan orbit at the given drift angle. Base direction is
-// "away from HELIOS" (the origin) per spec — the star sits behind the body, so
-// the scan view gets a backlit silhouette with the atmosphere rim glowing.
+// "away from HELIOS" so the body gets a backlit silhouette with a glowing rim.
 // Side effect: leaves the body's world position in _wp for the caller.
 function scanOrbitPosition(angle, out) {
   scanRef.worldPosition

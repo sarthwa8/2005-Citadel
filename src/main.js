@@ -18,6 +18,7 @@ import { Ship } from './entities/Ship.js'
 import * as InputSystem from './systems/InputSystem.js'
 import * as OrbitalMechanics from './systems/OrbitalMechanics.js'
 import * as ProximitySystem from './systems/ProximitySystem.js'
+import * as LabelSystem from './systems/LabelSystem.js'
 import * as ScanSystem from './systems/ScanSystem.js'
 import * as AutopilotSystem from './systems/AutopilotSystem.js'
 import * as AudioSystem from './systems/AudioSystem.js'
@@ -87,6 +88,7 @@ threeScene.add(ship.group)
 // ── Systems that need entity refs ──────────────────────────────────────────
 
 ProximitySystem.init(planets, station, comet)
+LabelSystem.init({ planets, station, camera })
 ScanSystem.init({ scene: threeScene, ship })
 AutopilotSystem.init({ ship })
 HUD.init()
@@ -134,26 +136,25 @@ for (const body of [...planets, station]) {
 // ── Input — mode toggle ────────────────────────────────────────────────────
 
 window.addEventListener('keydown', e => {
+  // Tab — toggle the flight framing: ME-style cinematic map ⇄ close driving cam.
   if (e.code === 'Tab') {
     e.preventDefault()
-    if (state.cameraMode === 'overview' && ship.ready) {
-      transitionTo('flight', ship)
-    } else if (state.cameraMode === 'flight') {
-      transitionTo('overview')
-    }
+    if (!ship.ready || state.transitioning || state.cameraMode === 'scan') return
+    state.flightCam = state.flightCam === 'map' ? 'drive' : 'map'
+    transitionTo('flight', ship)
   }
   // P — toggle retro pixelation (off by default; lets you preview and revert live)
   if (e.code === 'KeyP') {
     setPixelated(!isPixelated())
   }
   // R — restore the system to ground zero: cancel autopilot, dismiss any dossier,
-  // put the ship back at its start pose, and return to the ENTER overview framing.
+  // put the ship back at its start pose, and return to the default map framing.
   // Progress (scanned objectives) is intentionally kept.
   if (e.code === 'KeyR') {
     AutopilotSystem.cancel()
     ScanSystem.clearScan()
     ship.resetTo(SHIP_START)
-    resetView()
+    resetView(ship)
   }
 })
 
@@ -193,6 +194,7 @@ function animate() {
     ship.update(delta)
   }
   AutopilotSystem.update(delta)
+  ship.animate(elapsed)   // idle hover bob + parked sway / breathing engines
   darkZone.update(delta)
 
   ProximitySystem.update()
@@ -205,6 +207,7 @@ function animate() {
   updateCamera(ship, deltaMs)
 
   composer.render()
+  LabelSystem.update()   // after render → camera matrices are fresh for screen-space hover
   css2DRenderer.render(threeScene, camera)
 }
 

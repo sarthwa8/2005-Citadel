@@ -137,12 +137,16 @@ export class Ship {
         // This model is richly textured and almost entirely emissive, so it needs
         // very little help: a mild envMap for sheen and a low emissive so the
         // cockpit/engines glow and bloom subtly WITHOUT washing the whole hull
-        // white (boosting emissive here turns the ship into a blooming blob).
+        // white. The sun + 4 gel lights stack up and used to blow the hull past
+        // the bloom threshold (the ship "glowing like a star"), so we keep the
+        // light response low: a roughness FLOOR spreads/kills tight specular
+        // glints, capped metalness softens specular, and envMap/emissive stay low.
         if (n.material) {
           n.material.envMap = getEnvTexture()
-          n.material.envMapIntensity = 0.4
-          n.material.metalness = Math.min(n.material.metalness, 0.6)
-          n.material.emissiveIntensity = 0.12
+          n.material.envMapIntensity = 0.22
+          n.material.metalness = Math.min(n.material.metalness, 0.4)
+          n.material.roughness = Math.max(n.material.roughness ?? 0.5, 0.42)
+          n.material.emissiveIntensity = 0.08
           n.material.needsUpdate = true
         }
       }
@@ -165,7 +169,7 @@ export class Ship {
     // in ship-local space so it always lifts exactly the surfaces the camera sees.
     // Low intensity — the model is self-lit, so this is a gentle fill, not the
     // primary light. Tight falloff keeps it off the planets.
-    this.fillLight = new THREE.PointLight(0xB0C4FF, 35, 90, 1.5)
+    this.fillLight = new THREE.PointLight(0xB0C4FF, 24, 90, 1.5)
     this.fillLight.position.set(0, 8, 34)
     this.group.add(this.fillLight)
 
@@ -247,6 +251,28 @@ export class Ship {
       t.material.opacity = THREE.MathUtils.lerp(t.material.opacity, Math.min(0.85, drive * 0.7), 0.2)
       const sc = 0.8 + drive * 1.5
       t.scale.setScalar(THREE.MathUtils.lerp(t.scale.x, sc, 0.2))
+    }
+  }
+
+  // Idle "alive" animation — runs every frame regardless of mode. A gentle hover
+  // bob (applied to the model's local Y, so it never fights the flight bank on
+  // rotation.z); and while parked in overview, a slow sway + yaw drift + breathing
+  // engine glow so the ship never looks dead on the map.
+  animate(elapsed) {
+    if (!this.ready) return
+    const speed = state.shipVelocity.length()
+    const calm = THREE.MathUtils.clamp(1 - speed / 8, 0, 1)
+    this.model.position.y = Math.sin(elapsed * 1.15) * 0.5 * calm
+
+    if (state.cameraMode !== 'flight') {
+      this.model.rotation.z = Math.sin(elapsed * 0.7) * 0.06
+      this.model.rotation.x = Math.sin(elapsed * 0.9 + 1.0) * 0.04
+      this.group.rotation.y += 0.0007
+      const pulse = 0.5 + 0.5 * Math.sin(elapsed * 1.7)
+      for (const t of this.thrusters) {
+        t.material.opacity = 0.16 + 0.14 * pulse
+        t.scale.setScalar(0.85 + 0.2 * pulse)
+      }
     }
   }
 
