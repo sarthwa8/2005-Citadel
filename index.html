@@ -40,24 +40,16 @@
     <button id="panel-close">CLOSE</button>
   </div>
 
-  <!-- ── Loading screen (shown after ENTER until all assets are ready) ──── -->
-  <div id="loading-screen">
-    <div class="loading-inner">
-      <div class="loading-title">LOADING</div>
-      <div id="loading-bar"><div id="loading-bar-fill"></div></div>
-      <div class="loading-row">
-        <span id="loading-pct">0%</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Cinematic warp-in title (fades in over the live scene) ────────── -->
+  <!-- ── Cinematic warp-in title (fades in over the live fly-in) ───────── -->
   <div id="intro-title">
-    <h1 id="intro-name">SARTHAK SUKHRAL</h1>
-    <p id="intro-tag">An Interactive Interstellar Portfolio</p>
+    <h1 id="intro-name">Sarthak Sukhral</h1>
+    <p id="intro-tag">Creative Developer &amp; Researcher</p>
   </div>
 
-  <!-- ── Controls hint (brief, after the warp lands) ──────────────────── -->
+  <!-- ── Onboarding tip — fading instructions after you enter the scene ── -->
+  <div id="tip"></div>
+
+  <!-- ── Controls hint (persistent reference at the bottom) ───────────── -->
   <div id="controls-hint">
     <kbd>DRAG</kbd> rotate <span>·</span> <kbd>SCROLL</kbd> zoom <span>·</span>
     <kbd>WASD</kbd> fly <span>·</span> <kbd>SHIFT</kbd> boost <span>·</span>
@@ -69,7 +61,7 @@
     <div id="landing-vignette"></div>
     <div id="landing-content">
       <h1 id="landing-title">Sarthak Sukhral</h1>
-      <p class="landing-tagline">An Interactive Interstellar Portfolio</p>
+      <p class="landing-tagline">Creative Developer &amp; Researcher</p>
       <button id="enter-btn"><span>ENTER SYSTEM</span></button>
     </div>
   </div>

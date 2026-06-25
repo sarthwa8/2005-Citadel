@@ -1,5 +1,4 @@
 import * as THREE from 'three'
-import * as Loading from './ui/Loading.js'   // first — hooks the shared loader manager before any asset loads
 import { initScene, initComposerPasses, composer, css2DRenderer, setPixelated, isPixelated } from './core/scene.js'
 import { initCamera, camera, updateCamera, transitionTo, resetView, beginIntro, flyIntro, INTRO_DURATION } from './core/camera.js'
 import { state } from './state.js'
@@ -84,6 +83,10 @@ const ship = new Ship()
 ship.group.position.copy(SHIP_START)   // start between star outer glow (r=30) and GENESIS orbit (r=90)
 state.shipPosition.copy(ship.group.position)   // seed so HUD/minimap are right pre-flight
 threeScene.add(ship.group)
+
+// Park the camera far out in deep space NOW, so the landing shows a dim deep-space
+// vista and ENTER warps in from here (no separate loading screen / camera jump).
+beginIntro(ship)
 
 // ── Systems that need entity refs ──────────────────────────────────────────
 
@@ -215,29 +218,45 @@ animate()
 
 // ── Landing / briefing — first screen; ENTER arms audio and reveals the system ──
 
-Loading.initLoadingUI()
-
 const introTitleEl   = document.getElementById('intro-title')
 const controlsHintEl = document.getElementById('controls-hint')
 const hudEl          = document.getElementById('hud')
+const tipEl          = document.getElementById('tip')
 
-initLanding(async () => {
+initLanding(() => {
   AudioSystem.init()
   AudioSystem.play('uiClick')
 
-  // Jump the camera far out into deep space NOW (hidden behind the loading screen,
-  // which covers immediately), so the warp-in starts from there.
-  beginIntro(ship)
-  await Loading.runLoading()   // hold until all assets are ready
-
-  // Cinematic warp-in: the title fades in over the live fly-in, then dissolves as
-  // the camera settles into the map view and control is handed to the pilot.
+  // No separate loading screen — warp straight in (the camera is already parked in
+  // deep space from boot); assets stream in underneath the fly-in. The title fades
+  // in over the warp, then dissolves as the camera settles into the map view.
   introTitleEl.classList.add('visible')
   setTimeout(() => introTitleEl.classList.add('fade-out'), (INTRO_DURATION - 1.4) * 1000)
   flyIntro(ship, () => {
     introTitleEl.style.display = 'none'
     hudEl.classList.add('live')
-    controlsHintEl.classList.add('show')
-    setTimeout(() => controlsHintEl.classList.remove('show'), 7000)
+    controlsHintEl.classList.add('show')   // persistent controls reference (stays)
+    playOnboarding()
   })
 })
+
+// Fading onboarding tips/pointers — guide the pilot once they're in the scene.
+function playOnboarding() {
+  const tips = [
+    '↖  Scan all six worlds to chart the system',
+    'Drag to look around  ·  Scroll to zoom',
+    'Press <kbd>TAB</kbd> to pilot your ship, then <kbd>WASD</kbd> to fly',
+    'Fly close to a world and press <kbd>E</kbd> to scan it',
+  ]
+  let i = 0
+  const next = () => {
+    if (i >= tips.length || !tipEl) return
+    tipEl.innerHTML = tips[i++]
+    tipEl.classList.add('show')
+    setTimeout(() => {
+      tipEl.classList.remove('show')
+      setTimeout(next, 700)
+    }, 3000)
+  }
+  next()
+}
