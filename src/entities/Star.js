@@ -65,7 +65,7 @@ export class Star {
         blending: THREE.AdditiveBlending,
       }),
     );
-    this.flare.scale.set(SUN_RADIUS * 6, SUN_RADIUS * 1.2, 1);
+    this.flare.scale.set(SUN_RADIUS * 4, SUN_RADIUS * 1.2, 1);
     this.flare.renderOrder = 12;
     this.group.add(this.flare);
 

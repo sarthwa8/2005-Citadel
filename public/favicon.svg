@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1422"/>
+      <stop offset="1" stop-color="#04060c"/>
+    </linearGradient>
+    <radialGradient id="planet" cx="38%" cy="33%" r="80%">
+      <stop offset="0" stop-color="#AFFBEC"/>
+      <stop offset="42%" stop-color="#4FD6C0"/>
+      <stop offset="100%" stop-color="#7A4DE0"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#4FD6C0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#4FD6C0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+
+  <!-- soft glow -->
+  <circle cx="16" cy="15.5" r="11" fill="url(#glow)"/>
+
+  <!-- ring (behind the planet) -->
+  <ellipse cx="16" cy="16" rx="13" ry="4.3" fill="none" stroke="#9B6BFF"
+           stroke-width="1.7" opacity="0.9" transform="rotate(-24 16 16)"/>
+
+  <!-- planet -->
+  <circle cx="16" cy="15.5" r="6.6" fill="url(#planet)"/>
+
+  <!-- ring crossing in front of the planet's lower edge (depth) -->
+  <path d="M5.4 19.1 A13 4.3 -24 0 0 26 13.6" fill="none" stroke="#B98CFF"
+        stroke-width="1.7" opacity="0.9" stroke-linecap="round"/>
+
+  <!-- little star -->
+  <circle cx="25" cy="6.5" r="1.05" fill="#EAFBF7"/>
+</svg>
