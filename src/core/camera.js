@@ -54,13 +54,16 @@ const _dirAway     = new THREE.Vector3()
 const _wp          = new THREE.Vector3()
 const _isoDir      = new THREE.Vector3()
 
-// World-locked iso offset (unit dir × mapDist) from the followed point to the map
-// camera. Not tied to the ship's heading — mapAzimuth is user-controlled (drag).
-function mapCamOffset() {
+// Unit iso direction (from the followed point toward the camera). Not tied to the
+// ship's heading — mapAzimuth is user-controlled (drag).
+function mapUnitDir(out) {
   const cp = Math.cos(MAP_PITCH)
-  return _isoDir
-    .set(Math.sin(mapAzimuth) * cp, Math.sin(MAP_PITCH), Math.cos(mapAzimuth) * cp)
-    .multiplyScalar(mapDist)
+  return out.set(Math.sin(mapAzimuth) * cp, Math.sin(MAP_PITCH), Math.cos(mapAzimuth) * cp)
+}
+
+// World-locked iso offset (unit dir × mapDist) from the followed point to the map camera.
+function mapCamOffset() {
+  return mapUnitDir(_isoDir).multiplyScalar(mapDist)
 }
 
 // Point the camera follows (ship if it exists, else the system start point).
@@ -169,6 +172,39 @@ export function resetView(ship = null) {
   mapDist = MAP_DIST_DEFAULT
   state.flightCam = 'map'
   transitionTo('flight', ship)
+}
+
+// ── Cinematic warp-in intro ──────────────────────────────────────────────────
+export const INTRO_DURATION = 4.2
+
+// Jump the camera far out into deep space, locked, looking at the system. Called on
+// ENTER (hidden behind the loading screen) so flyIntro() can warp in from here.
+export function beginIntro(ship) {
+  gsap.killTweensOf(camera.position)
+  gsap.killTweensOf(camera)
+  const dir = mapUnitDir(new THREE.Vector3())
+  _lookTarget.copy(ship.group.position)
+  camera.position.copy(ship.group.position).addScaledVector(dir, 1700)
+  camera.fov = 96
+  camera.updateProjectionMatrix()
+  state.cameraMode = 'flight'
+  state.transitioning = true
+}
+
+// Warp in: fly from the deep-space pose to the normal map pose, FOV easing back.
+// Releases control (transitioning=false) and calls onDone when it lands.
+export function flyIntro(ship, onDone) {
+  const dir = mapUnitDir(new THREE.Vector3())
+  const land = new THREE.Vector3().copy(ship.group.position).addScaledVector(dir, mapDist)
+  gsap.to(camera.position, {
+    x: land.x, y: land.y, z: land.z,
+    duration: INTRO_DURATION, ease: 'power2.inOut',
+    onComplete: () => { state.transitioning = false; onDone?.() },
+  })
+  gsap.to(camera, {
+    fov: BASE_FOV, duration: INTRO_DURATION, ease: 'power2.out',
+    onUpdate: () => camera.updateProjectionMatrix(),
+  })
 }
 
 // ── Per-frame controller ─────────────────────────────────────────────────────

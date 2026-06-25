@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import * as Loading from './ui/Loading.js'   // first — hooks the shared loader manager before any asset loads
 import { initScene, initComposerPasses, composer, css2DRenderer, setPixelated, isPixelated } from './core/scene.js'
-import { initCamera, camera, updateCamera, transitionTo, resetView } from './core/camera.js'
+import { initCamera, camera, updateCamera, transitionTo, resetView, beginIntro, flyIntro, INTRO_DURATION } from './core/camera.js'
 import { state } from './state.js'
 import { Star } from './entities/Star.js'
 import { Starfield } from './entities/Starfield.js'
@@ -216,8 +216,28 @@ animate()
 // ── Landing / briefing — first screen; ENTER arms audio and reveals the system ──
 
 Loading.initLoadingUI()
+
+const introTitleEl   = document.getElementById('intro-title')
+const controlsHintEl = document.getElementById('controls-hint')
+const hudEl          = document.getElementById('hud')
+
 initLanding(async () => {
   AudioSystem.init()
   AudioSystem.play('uiClick')
-  await Loading.runLoading()   // hold the system behind the loading screen until assets are ready
+
+  // Jump the camera far out into deep space NOW (hidden behind the loading screen,
+  // which covers immediately), so the warp-in starts from there.
+  beginIntro(ship)
+  await Loading.runLoading()   // hold until all assets are ready
+
+  // Cinematic warp-in: the title fades in over the live fly-in, then dissolves as
+  // the camera settles into the map view and control is handed to the pilot.
+  introTitleEl.classList.add('visible')
+  setTimeout(() => introTitleEl.classList.add('fade-out'), (INTRO_DURATION - 1.4) * 1000)
+  flyIntro(ship, () => {
+    introTitleEl.style.display = 'none'
+    hudEl.classList.add('live')
+    controlsHintEl.classList.add('show')
+    setTimeout(() => controlsHintEl.classList.remove('show'), 7000)
+  })
 })
