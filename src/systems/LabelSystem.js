@@ -50,6 +50,8 @@ export function update() {
       ? state.shipPosition.distanceTo(planet.worldPosition()) < (planet.config.scanRadius ?? 35) * PLANET_REVEAL_MULT
       : mouseDistTo(planet.worldPosition()) < HOVER_PX;
     show(planet.labelEl, on);
+    // Drop the red objective marker once the world has been scanned.
+    planet.indicatorEl?.classList.toggle("scanned", state.discoveredBodies.has(planet.config.name));
 
     for (const moon of planet.moons) {
       // Moons only ever show up close (ship proximity) — never clutter the map.
@@ -62,5 +64,6 @@ export function update() {
       ? state.shipPosition.distanceTo(station.worldPosition()) < (station.config.scanRadius ?? 35) * PLANET_REVEAL_MULT
       : mouseDistTo(station.worldPosition()) < HOVER_PX;
     show(station.labelEl, on);
+    station.indicatorEl?.classList.toggle("scanned", state.discoveredBodies.has(station.config.name));
   }
 }

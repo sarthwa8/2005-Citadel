@@ -62,20 +62,33 @@ const FRAG = /* glsl */`
     // Galaxy vibe — vibrant, not a faint wash).
     float density = smoothstep(0.40, 0.94, base * 0.62 + warp * 0.38);
 
-    // Saturated, alien GotG palette.
-    vec3 indigo  = vec3(0.20, 0.10, 0.66);
-    vec3 violet  = vec3(0.58, 0.16, 0.92);
-    vec3 blue    = vec3(0.10, 0.40, 0.95);
-    vec3 cyan    = vec3(0.05, 0.72, 0.78);
-    vec3 magenta = vec3(0.95, 0.16, 0.62);
-    vec3 orange  = vec3(0.98, 0.46, 0.16);
+    // Palette — a BLUE-dominant base (the user prefers the blues over the purple base)
+    // with OCCASIONAL, isolated green and red clouds. No continuous spectrum sweep.
+    vec3 blue    = vec3(0.12, 0.42, 0.96);
+    vec3 azure   = vec3(0.10, 0.60, 0.98);
+    vec3 indigo  = vec3(0.13, 0.22, 0.82);
+    vec3 violet  = vec3(0.46, 0.24, 0.92);
+    vec3 green   = vec3(0.16, 0.78, 0.40);
+    vec3 red     = vec3(0.95, 0.16, 0.20);
 
-    // Multi-region colour — reuse the 3 fields (no extra fbm taps) for varied hues.
-    vec3 col = mix(indigo, violet, smoothstep(0.25, 0.82, region));
-    col = mix(col, blue,    smoothstep(0.28, 0.74, warp)          * 0.60);
-    col = mix(col, cyan,    smoothstep(0.50, 0.92, region)        * 0.60);
-    col = mix(col, magenta, smoothstep(0.55, 1.0,  base)          * 0.60);
-    col = mix(col, orange,  smoothstep(0.72, 1.0,  region * warp) * 0.40);
+    // Dominant mood is blue ↔ indigo with bright azure highlights; only a touch of
+    // violet in the densest filaments, so it reads BLUE rather than purple.
+    vec3 col = mix(blue, indigo, smoothstep(0.30, 0.75, warp));
+    col = mix(col, azure,  smoothstep(0.55, 0.92, base) * 0.50);
+    col = mix(col, violet, smoothstep(0.74, 1.0,  base * warp) * 0.26);
+
+    // The region field clusters tightly around 0.5, so stretch it before choosing
+    // colour zones — otherwise the green/red tails are too rare to ever see. Green
+    // takes the HIGH end, red the LOW end, purple holds the middle. Gated by a cloud
+    // factor so colour only lands on actual gas, and the two never touch (no rainbow).
+    float rg    = clamp((region - 0.5) * 2.6 + 0.5, 0.0, 1.0);
+    float cloud = smoothstep(0.30, 0.62, base * 0.6 + warp * 0.4);
+
+    float greenMask = cloud * smoothstep(0.58, 0.80, rg);
+    col = mix(col, green, greenMask * 0.95);
+
+    float redMask = cloud * (1.0 - smoothstep(0.22, 0.42, rg));
+    col = mix(col, red, redMask * 0.95);
 
     // Bright filament cores; gentler power so the colour spreads further.
     float glow = pow(density, 1.3);

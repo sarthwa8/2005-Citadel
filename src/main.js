@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js'
 import { initScene, initComposerPasses, composer, css2DRenderer, setPixelated, isPixelated } from './core/scene.js'
 import { initCamera, camera, updateCamera, transitionTo, resetView, beginIntro, flyIntro, INTRO_DURATION } from './core/camera.js'
 import { state } from './state.js'
@@ -108,6 +109,8 @@ QuestLog.init(
   () => {
     secretHintEl?.classList.add('visible')
     AudioSystem.play('moonUnlock')
+    // It's a one-off reveal — clear it after 10s so it doesn't sit over the HUD.
+    setTimeout(() => secretHintEl?.classList.remove('visible'), 10000)
   },
 )
 
@@ -134,6 +137,19 @@ for (const body of [...planets, station]) {
     AutopilotSystem.flyTo(body)
     if (state.cameraMode !== 'flight') transitionTo('flight', ship)
   })
+}
+
+// ── Objective markers — a red reticle on every UNSCANNED world so they're easy to
+// spot from a distance (NOVARA, the tiny station, especially). Each marker fades
+// out the moment its body is scanned (LabelSystem toggles `.scanned`), and the whole
+// set only appears once you're in the scene (body.in-scene, set after the warp-in).
+for (const body of [...planets, station]) {
+  const el = document.createElement('div')
+  el.className = body === station ? 'body-indicator is-novara' : 'body-indicator'
+  el.innerHTML = '<span class="bi-mark"></span>'
+  body.indicatorEl = el
+  const marker = new CSS2DObject(el)            // anchored at the body's centre
+  ;(body.planetGroup ?? body.stationGroup).add(marker)
 }
 
 // ── Input — mode toggle ────────────────────────────────────────────────────
@@ -167,6 +183,34 @@ window.addEventListener('keydown', e => {
 // config speeds were tuned fast; ~10× slower makes bodies comfortably scannable.
 const ORBIT_SCALE = 0.1
 
+// ── Collision — keep the ship from punching through the worlds, HELIOS, or NOVARA.
+// Per body it's a sphere test: if the ship's centre is inside (body radius + ship
+// radius), snap it back onto that surface and cancel the inward velocity so it
+// slides along instead of sticking. Only runs during MANUAL flight — the autopilot
+// already parks clear of every body, so we don't fight it.
+const SHIP_R        = 6
+const SUN_COLLIDE_R = 26   // HELIOS bounding radius (24) + a hair of clearance
+const _colCenter = new THREE.Vector3()
+const _colNormal = new THREE.Vector3()
+
+function pushShipOut(center, radius) {
+  const minD = radius + SHIP_R
+  _colNormal.subVectors(ship.group.position, center)
+  const d = _colNormal.length()
+  if (d >= minD || d < 1e-4) return
+  _colNormal.divideScalar(d)                                    // outward surface normal
+  ship.group.position.copy(center).addScaledVector(_colNormal, minD)
+  const inward = state.shipVelocity.dot(_colNormal)
+  if (inward < 0) state.shipVelocity.addScaledVector(_colNormal, -inward)
+}
+
+function collideShip() {
+  pushShipOut(_colCenter.set(0, 0, 0), SUN_COLLIDE_R)           // HELIOS at the origin
+  for (const planet of planets) pushShipOut(planet.worldPosition(), planet.config.radius)
+  if (station.ready) pushShipOut(station.worldPosition(), station.config.radius ?? 12)
+  state.shipPosition.copy(ship.group.position)
+}
+
 const clock = new THREE.Clock()
 
 function animate() {
@@ -195,6 +239,7 @@ function animate() {
   // Ship (manual physics only in flight mode, not mid-transition, not on autopilot)
   if (!state.transitioning && state.cameraMode === 'flight' && !state.autopilotActive) {
     ship.update(delta)
+    collideShip()
   }
   AutopilotSystem.update(delta)
   ship.animate(elapsed)   // idle hover bob + parked sway / breathing engines
@@ -236,6 +281,7 @@ initLanding(() => {
     introTitleEl.style.display = 'none'
     hudEl.classList.add('live')
     controlsHintEl.classList.add('show')   // persistent controls reference (stays)
+    document.body.classList.add('in-scene')   // reveal the red objective markers
     playOnboarding()
   })
 })
@@ -245,6 +291,7 @@ function playOnboarding() {
   const tips = [
     '↖  Scan all six worlds to chart the system',
     'Drag to look around  ·  Scroll to zoom',
+    'Hover a world to reveal its name  ·  click it to fly there',
     'Press <kbd>TAB</kbd> to pilot your ship, then <kbd>WASD</kbd> to fly',
     'Fly close to a world and press <kbd>E</kbd> to scan it',
   ]

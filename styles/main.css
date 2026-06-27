@@ -127,12 +127,14 @@ canvas { display: block; }
 .quest-item.done .quest-name { color: var(--accent-bright); }
 .quest-item.done .quest-sub  { color: var(--text-dim); }
 
-/* Contextual "E · SCAN" prompt */
+/* Contextual "E · SCAN" prompt — sits ABOVE the persistent controls bar so the
+   two never overlap. */
 #scan-prompt {
-  position: absolute;
-  bottom: 54px;
+  position: fixed;
+  bottom: 104px;
   left: 50%;
   transform: translateX(-50%) translateY(10px);
+  z-index: 50;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -459,10 +461,10 @@ canvas { display: block; }
 #landing-title {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(40px, 7vw, 84px);
-  letter-spacing: 2px;
+  font-size: clamp(46px, 8vw, 96px);
+  letter-spacing: 5px;
   margin: 0;
-  line-height: 1.06;
+  line-height: 1.04;
   color: #EAFBF7;
   text-shadow: 0 0 34px rgba(79, 214, 192, 0.35), 0 0 10px rgba(0, 0, 0, 0.5);
   animation: name-in 1.1s ease-out both;   /* subtle: gentle blur + small rise */
@@ -472,15 +474,22 @@ canvas { display: block; }
   to   { opacity: 1; filter: blur(0);   transform: translateY(0); }
 }
 
+/* Out of flow (like #intro-tag) so the name stays centred and the landing name
+   lines up exactly with the warp title. */
 .landing-tagline {
-  margin: 20px 0 0;
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 14px);
+  transform: translateX(-50%);
+  margin: 0;
+  white-space: nowrap;
   font-size: clamp(13px, 1.6vw, 17px);
   font-weight: 400;
   letter-spacing: 5px;
   color: var(--text-dim);
   text-transform: uppercase;
   opacity: 0;
-  animation: rise-in 0.9s ease 0.9s both;
+  animation: btn-fade 0.9s ease 0.85s both;
 }
 
 kbd {
@@ -502,7 +511,7 @@ kbd {
 #enter-btn {
   position: absolute;
   left: 50%;
-  top: calc(100% + 34px);
+  top: calc(100% + 64px);
   transform: translateX(-50%);
   cursor: pointer;
   padding: 14px 60px;
@@ -562,14 +571,21 @@ kbd {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(40px, 7vw, 84px);
-  letter-spacing: 2px;
-  line-height: 1.06;
+  font-size: clamp(46px, 8vw, 96px);
+  letter-spacing: 5px;
+  line-height: 1.04;
   color: #EAFBF7;
   text-shadow: 0 0 42px rgba(79, 214, 192, 0.45), 0 0 12px rgba(0, 0, 0, 0.65);
 }
+/* Tagline is taken out of flow so the NAME itself sits dead-centre — right on the
+   ship + star the warp zooms into — instead of being pushed up by the tagline. */
 #intro-tag {
-  margin: 20px 0 0;
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 62px);
+  transform: translateX(-50%);
+  margin: 0;
+  white-space: nowrap;
   font-family: var(--font-display);
   font-size: clamp(13px, 1.6vw, 17px);
   font-weight: 400;
@@ -630,12 +646,14 @@ kbd {
 #tip.show { opacity: 1; transform: translate(-50%, 0); }
 #tip kbd { margin: 0 2px; }
 
-/* In-game easter-egg reveal — shown once every objective is complete */
+/* In-game easter-egg reveal — shown once every objective is complete, then auto-
+   clears after 10s. Pinned to the TOP centre so it never overlaps the controls bar
+   or the scan prompt at the bottom. */
 #secret-hint {
   position: fixed;
   left: 50%;
-  bottom: 34px;
-  transform: translateX(-50%) translateY(12px);
+  top: 22px;
+  transform: translateX(-50%) translateY(-12px);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -658,4 +676,38 @@ kbd {
   transform: translateX(-50%) translateY(0);
   animation: secret-glow 2.6s ease-in-out infinite;
 }
+/* fade-up on the way out (transform is back to the hidden offset) */
 @keyframes secret-glow { 50% { box-shadow: 0 0 30px rgba(79, 214, 192, 0.5); } }
+
+/* ════════════════════════════════════════════════════════════════════════
+   OBJECTIVE MARKERS — red reticles over every UNSCANNED world so they're easy
+   to find at a distance (NOVARA, the small station, gets a bigger one). They
+   only appear once you're in the scene, and clear the moment a world is scanned.
+   ════════════════════════════════════════════════════════════════════════ */
+.body-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+body.in-scene .body-indicator        { opacity: 0.9; }
+body.in-scene .body-indicator.scanned { opacity: 0; }   /* fade out on scan */
+
+.bi-mark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 80, 80, 0.95);
+  transform: rotate(45deg);                 /* diamond reticle */
+  animation: bi-pulse 1.7s ease-in-out infinite;
+}
+.is-novara .bi-mark {
+  width: 28px;
+  height: 28px;
+  border-color: #ff5a5a;
+}
+@keyframes bi-pulse {
+  0%, 100% { box-shadow: 0 0 9px  rgba(255, 60, 60, 0.45); }
+  50%      { box-shadow: 0 0 22px rgba(255, 82, 82, 0.95); }
+}
