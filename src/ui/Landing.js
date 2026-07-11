@@ -9,7 +9,7 @@ export function initLanding(onEnter) {
     if (landing.classList.contains('dismissed')) return
     landing.classList.add('dismissed')
     onEnter?.()
-    setTimeout(() => { landing.style.display = 'none' }, 1050)
+    setTimeout(() => { landing.style.display = 'none' }, 1450)   // after the 1.4s veil fade
   }
 
   document.getElementById('enter-btn').addEventListener('click', enter)

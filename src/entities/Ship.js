@@ -34,10 +34,14 @@ const SHIP_LENGTH    = 16
 const SHIP_MODEL_YAW = Math.PI / 2   // model's long axis is X; rotate so the nose faces -Z
 const THRUST_FORCE = 50    // units/s² acceleration
 export const MAX_SPEED = 25   // units/s top speed (AudioSystem scales thruster volume off this)
-const DRAG         = 0.97  // velocity multiplier per frame (~framerate dependent but acceptable)
+const DRAG         = 0.97  // velocity multiplier per 60Hz-frame (applied framerate-independently)
 const TURN_RATE    = 1.7   // rad/s yaw speed for A/D
 const BANK_MAX     = 0.45  // rad — visual roll into turns (model-only, camera stays level)
 const PITCH_MAX    = 0.3   // rad — visual nose pitch from vertical velocity (model-only)
+
+// One-pole smoothing alpha: 1 − e^(−λ·dt). Frame-rate-independent replacement for
+// fixed per-frame lerp/slerp factors, so banking/pitch feel the same at 60 and 120Hz.
+const dampAlpha = (lambda, dt) => 1 - Math.exp(-lambda * dt)
 
 // Turbo (hold Shift + W): a big speed/accel boost with flared thrusters + wider FOV.
 const TURBO_SPEED_MULT  = 2.6
@@ -221,7 +225,7 @@ export class Ship {
     if (this._thrustWorld.lengthSq() > 1) this._thrustWorld.normalize()
 
     state.shipVelocity.addScaledVector(this._thrustWorld, thrustForce * delta)
-    state.shipVelocity.multiplyScalar(DRAG)
+    state.shipVelocity.multiplyScalar(Math.pow(DRAG, delta * 60))
     state.shipVelocity.clampLength(0, maxSpeed)
 
     this.group.position.addScaledVector(state.shipVelocity, delta)
@@ -231,26 +235,27 @@ export class Ship {
     // autopilot banking levels out instead of snapping). Camera stays level.
     this._headingEuler.set(0, heading, 0)
     this._headingQuat.setFromEuler(this._headingEuler)
-    this.group.quaternion.slerp(this._headingQuat, 0.25)
+    this.group.quaternion.slerp(this._headingQuat, dampAlpha(17, delta))
 
     // Visual bank into turns + pitch from vertical motion — applied to the holder
     // (this.model) only, so the chase camera never rolls. The base yaw lives on an
     // inner node, so these axes are clean: +Z rolls about the forward axis, +X
     // pitches the nose. Bank into the turn (right turn → right wing dips → -Z roll);
     // nose rises when climbing (+pitch).
-    this._smoothYaw = THREE.MathUtils.lerp(this._smoothYaw, yawInput, 0.08)
+    this._smoothYaw = THREE.MathUtils.lerp(this._smoothYaw, yawInput, dampAlpha(5, delta))
     const pitchTarget = THREE.MathUtils.clamp(state.shipVelocity.y * 0.018, -PITCH_MAX, PITCH_MAX)
     this.model.rotation.z = -this._smoothYaw * BANK_MAX
-    this.model.rotation.x = THREE.MathUtils.lerp(this.model.rotation.x, pitchTarget, 0.1)
+    this.model.rotation.x = THREE.MathUtils.lerp(this.model.rotation.x, pitchTarget, dampAlpha(6.5, delta))
 
     // Thruster flare — small nozzle glows that swell with forward thrust + speed,
     // a bit more in turbo. Kept compact so they read as exhaust, not a halo.
     const speedFrac = Math.min(1, state.shipVelocity.length() / MAX_SPEED)
     const drive = Math.min(1, Math.max(0, thrustFwd) * 0.6 + speedFrac * 0.4) + (turbo ? 0.45 : 0)
+    const flareAlpha = dampAlpha(13, delta)
     for (const t of this.thrusters) {
-      t.material.opacity = THREE.MathUtils.lerp(t.material.opacity, Math.min(0.85, drive * 0.7), 0.2)
+      t.material.opacity = THREE.MathUtils.lerp(t.material.opacity, Math.min(0.85, drive * 0.7), flareAlpha)
       const sc = 0.8 + drive * 1.5
-      t.scale.setScalar(THREE.MathUtils.lerp(t.scale.x, sc, 0.2))
+      t.scale.setScalar(THREE.MathUtils.lerp(t.scale.x, sc, flareAlpha))
     }
   }
 

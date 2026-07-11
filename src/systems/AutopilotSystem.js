@@ -21,7 +21,10 @@ const CRUISE_SPEED  = 100   // units/s — sets tween duration from distance
 const MIN_DURATION  = 2.5
 const MAX_DURATION  = 8
 const PARK_FACTOR   = 0.7   // arrive at scanRadius * this from the body center
-const TAKEOFF_DELAY = 1.15  // let the overview→flight camera transition land first
+const TAKEOFF_DELAY = 1.4   // let the overview→flight camera transition (1.35s) land first
+
+// One-pole smoothing alpha (1 − e^(−λ·dt)) — framerate-independent nose steering.
+const dampAlpha = (lambda, dt) => 1 - Math.exp(-lambda * dt)
 
 let ship = null
 let tween = null
@@ -100,7 +103,7 @@ function applyHold(delta) {
   state.shipVelocity.subVectors(_desired, ship.group.position).divideScalar(delta)
   ship.group.position.copy(_desired)
   state.shipPosition.copy(_desired)
-  ship.faceTowards(_bodyWP, 0.08)   // keep the nose on the body it's orbiting
+  ship.faceTowards(_bodyWP, dampAlpha(5, delta))   // keep the nose on the body it's orbiting
 }
 
 // Place the ship on the path at the current eased progress. Destination tracks
@@ -120,5 +123,5 @@ function applyCruise(delta) {
   state.shipVelocity.subVectors(_desired, ship.group.position).divideScalar(delta)
   ship.group.position.copy(_desired)
   state.shipPosition.copy(_desired)
-  ship.faceTowards(_bodyWP, 0.2)   // nose stays locked on the destination — flies forward
+  ship.faceTowards(_bodyWP, dampAlpha(13, delta))   // nose stays locked on the destination — flies forward
 }

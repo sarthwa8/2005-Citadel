@@ -21,9 +21,20 @@ const MAP_ZOOM_SPEED   = 0.5    // mapDist change per wheel deltaY unit
 // driving view). Offset is rotated by the ship's quaternion so W is always forward.
 const CHASE_OFFSET = new THREE.Vector3(0, 9, 34)
 
-const TRANSITION_SECS = 1.1
+const TRANSITION_SECS = 1.35
 const BASE_FOV  = 60
 const TURBO_FOV = 82
+
+// Per-frame smoothing — λ per second, fed through dampAlpha() so the feel is
+// identical at 60Hz and 120Hz and frame hitches can't make the camera pop.
+// Higher = snappier, lower = floatier.
+const POS_DAMP_MAP   = 5.5   // map cam position follow
+const POS_DAMP_DRIVE = 5.0   // chase cam position follow
+const POS_DAMP_SCAN  = 3.5   // scan orbit drift
+const LOOK_DAMP      = 6.5   // look-target follow
+const ROT_DAMP       = 9.0   // drag-rotate glide toward the pointer
+const ZOOM_DAMP      = 6.5   // wheel-zoom glide toward the target distance
+const FOV_DAMP       = 5.0   // turbo/base FOV ease
 
 // Scan mode: camera parks at radius*2.5 from the body, elevated, drifting slowly.
 const SCAN_DIST_FACTOR   = 2.5
@@ -35,9 +46,13 @@ const UP = new THREE.Vector3(0, 1, 0)
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-// Map camera: user-controlled rotation (drag) + zoom (wheel).
+// Map camera: user-controlled rotation (drag) + zoom (wheel). Input writes the
+// *Target values; the per-frame controller damps the live values toward them so
+// wheel ticks and pointer moves glide instead of stepping.
 let mapAzimuth = 0
+let mapAzimuthTarget = 0
 let mapDist = MAP_DIST_DEFAULT
+let mapDistTarget = MAP_DIST_DEFAULT
 let dragging = false
 let lastPointerX = 0
 
@@ -53,6 +68,12 @@ const _fwd         = new THREE.Vector3()
 const _dirAway     = new THREE.Vector3()
 const _wp          = new THREE.Vector3()
 const _isoDir      = new THREE.Vector3()
+
+// One-pole smoothing alpha for this frame: 1 − e^(−λ·dt). Frame-rate-independent
+// replacement for a fixed per-frame lerp factor.
+function dampAlpha(lambda, deltaMs) {
+  return 1 - Math.exp(-lambda * deltaMs / 1000)
+}
 
 // Unit iso direction (from the followed point toward the camera). Not tied to the
 // ship's heading — mapAzimuth is user-controlled (drag).
@@ -102,7 +123,7 @@ export function initCamera() {
   })
   window.addEventListener('pointermove', e => {
     if (!dragging) return
-    mapAzimuth -= (e.clientX - lastPointerX) * MAP_ROT_SPEED
+    mapAzimuthTarget -= (e.clientX - lastPointerX) * MAP_ROT_SPEED
     lastPointerX = e.clientX
   })
   window.addEventListener('pointerup', () => { dragging = false })
@@ -110,7 +131,7 @@ export function initCamera() {
   el.addEventListener('wheel', e => {
     if (state.cameraMode !== 'flight' || state.flightCam !== 'map') return
     e.preventDefault()
-    mapDist = THREE.MathUtils.clamp(mapDist + e.deltaY * MAP_ZOOM_SPEED, MAP_DIST_MIN, MAP_DIST_MAX)
+    mapDistTarget = THREE.MathUtils.clamp(mapDistTarget + e.deltaY * MAP_ZOOM_SPEED, MAP_DIST_MIN, MAP_DIST_MAX)
   }, { passive: false })
 
   return camera
@@ -143,12 +164,12 @@ export function transitionTo(newMode, targetBody = null) {
 
   gsap.to(camera.position, {
     x: destPos.x, y: destPos.y, z: destPos.z,
-    duration: TRANSITION_SECS, ease: 'power2.inOut',
+    duration: TRANSITION_SECS, ease: 'power3.inOut',
     onComplete: () => { state.transitioning = false },
   })
   gsap.to(_lookTarget, {
     x: destLook.x, y: destLook.y, z: destLook.z,
-    duration: TRANSITION_SECS, ease: 'power2.inOut',
+    duration: TRANSITION_SECS, ease: 'power3.inOut',
   })
 }
 
@@ -168,14 +189,21 @@ function flightDest(ship, destPos, destLook) {
 // Reset to the default MAP framing (bound to R in main.js). Recentres rotation +
 // zoom and tweens back from wherever (drive / scan / rotated map).
 export function resetView(ship = null) {
-  mapAzimuth = 0
-  mapDist = MAP_DIST_DEFAULT
+  mapAzimuth = mapAzimuthTarget = 0
+  mapDist = mapDistTarget = MAP_DIST_DEFAULT
   state.flightCam = 'map'
   transitionTo('flight', ship)
 }
 
 // ── Cinematic warp-in intro ──────────────────────────────────────────────────
-export const INTRO_DURATION = 4.2
+export const INTRO_DURATION = 5.2
+
+// The ease IS the warp's personality — it shapes the whole fly-in. 'power3.inOut':
+// gentle launch out of the landing veil, fast mid-flight, long glide into the map
+// pose (velocity hits zero exactly at handover, so the follow cam takes over with
+// no pop). Alternatives worth trying: 'expo.out' = hard slam-in with an extra-long
+// settle; 'power2.inOut' = the old, shorter-tailed feel.
+const WARP_EASE = 'power3.inOut'
 
 // Jump the camera far out into deep space, locked, looking at the system. Called on
 // ENTER (hidden behind the loading screen) so flyIntro() can warp in from here.
@@ -198,11 +226,13 @@ export function flyIntro(ship, onDone) {
   const land = new THREE.Vector3().copy(ship.group.position).addScaledVector(dir, mapDist)
   gsap.to(camera.position, {
     x: land.x, y: land.y, z: land.z,
-    duration: INTRO_DURATION, ease: 'power2.inOut',
+    duration: INTRO_DURATION, ease: WARP_EASE,
     onComplete: () => { state.transitioning = false; onDone?.() },
   })
+  // FOV rides the same curve as position so the stretch and the motion settle in
+  // lockstep — mismatched eases read as a subtle "double landing".
   gsap.to(camera, {
-    fov: BASE_FOV, duration: INTRO_DURATION, ease: 'power2.out',
+    fov: BASE_FOV, duration: INTRO_DURATION, ease: WARP_EASE,
     onUpdate: () => camera.updateProjectionMatrix(),
   })
 }
@@ -222,7 +252,7 @@ export function updateCamera(ship, deltaMs = 16.7) {
     if (!scanRef) return
     scanAngle += SCAN_ORBIT_SPEED * deltaMs
     scanOrbitPosition(scanAngle, _desiredPos)
-    camera.position.lerp(_desiredPos, 0.06)
+    camera.position.lerp(_desiredPos, dampAlpha(POS_DAMP_SCAN, deltaMs))
     _lookTarget.copy(_wp)
     camera.lookAt(_lookTarget)
 
@@ -231,18 +261,20 @@ export function updateCamera(ship, deltaMs = 16.7) {
     if (!ship?.ready) return
     _offsetWorld.copy(CHASE_OFFSET).applyQuaternion(ship.group.quaternion)
     _desiredPos.copy(ship.group.position).add(_offsetWorld)
-    camera.position.lerp(_desiredPos, 0.08)
+    camera.position.lerp(_desiredPos, dampAlpha(POS_DAMP_DRIVE, deltaMs))
     _fwd.set(0, 0, 1).applyQuaternion(ship.group.quaternion)
     _lookTarget.copy(ship.group.position).addScaledVector(_fwd, 6)
     camera.lookAt(_lookTarget)
 
   } else {
     // MAP: low cinematic iso angle following the ship's position (user rotates via
-    // drag, zooms via wheel).
+    // drag, zooms via wheel). Rotation + zoom glide toward their input targets.
+    mapAzimuth += (mapAzimuthTarget - mapAzimuth) * dampAlpha(ROT_DAMP, deltaMs)
+    mapDist    += (mapDistTarget    - mapDist)    * dampAlpha(ZOOM_DAMP, deltaMs)
     const p = followPoint(ship)
     _desiredPos.copy(p).add(mapCamOffset())
-    camera.position.lerp(_desiredPos, 0.1)
-    _lookTarget.lerp(p, 0.12)
+    camera.position.lerp(_desiredPos, dampAlpha(POS_DAMP_MAP, deltaMs))
+    _lookTarget.lerp(p, dampAlpha(LOOK_DAMP, deltaMs))
     camera.lookAt(_lookTarget)
   }
 
@@ -257,7 +289,7 @@ export function updateCamera(ship, deltaMs = 16.7) {
   const boosting = state.cameraMode === 'flight' && (state.turbo || state.autopilotActive)
   const targetFov = boosting ? TURBO_FOV : BASE_FOV
   if (Math.abs(camera.fov - targetFov) > 0.04) {
-    camera.fov += (targetFov - camera.fov) * 0.08
+    camera.fov += (targetFov - camera.fov) * dampAlpha(FOV_DAMP, deltaMs)
     camera.updateProjectionMatrix()
   }
 }
