@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js'
-import { initScene, initComposerPasses, composer, css2DRenderer, setPixelated, isPixelated } from './core/scene.js'
+import { initScene, initComposerPasses, composer, css2DRenderer, renderer, setPixelated, isPixelated } from './core/scene.js'
 import { initCamera, camera, updateCamera, transitionTo, resetView, beginIntro, flyIntro, INTRO_DURATION } from './core/camera.js'
 import { state } from './state.js'
 import { Star } from './entities/Star.js'
@@ -271,6 +271,11 @@ const tipEl          = document.getElementById('tip')
 initLanding(() => {
   AudioSystem.init()
   AudioSystem.play('uiClick')
+
+  // Pre-compile every shader NOW, while the veil is still fading — GLB materials
+  // (ship, sun, asteroids) that streamed in during the landing would otherwise
+  // compile lazily the first frame they appear, stuttering the middle of the warp.
+  renderer.compile(threeScene, camera)
 
   // No separate loading screen — warp straight in (the camera is already parked in
   // deep space from boot); assets stream in underneath the fly-in. The title fades

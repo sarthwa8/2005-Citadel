@@ -31,7 +31,7 @@ const TURBO_FOV = 82
 const POS_DAMP_MAP   = 5.5   // map cam position follow
 const POS_DAMP_DRIVE = 5.0   // chase cam position follow
 const POS_DAMP_SCAN  = 3.5   // scan orbit drift
-const LOOK_DAMP      = 6.5   // look-target follow
+const LOOK_DAMP      = 6.5   // look-target follow — slightly stiffer than position (cinematic lead)
 const ROT_DAMP       = 9.0   // drag-rotate glide toward the pointer
 const ZOOM_DAMP      = 6.5   // wheel-zoom glide toward the target distance
 const FOV_DAMP       = 5.0   // turbo/base FOV ease
@@ -203,16 +203,20 @@ export const INTRO_DURATION = 5.2
 // pose (velocity hits zero exactly at handover, so the follow cam takes over with
 // no pop). Alternatives worth trying: 'expo.out' = hard slam-in with an extra-long
 // settle; 'power2.inOut' = the old, shorter-tailed feel.
-const WARP_EASE = 'power3.inOut'
+const WARP_EASE = 'expo.out'
 
 // Jump the camera far out into deep space, locked, looking at the system. Called on
 // ENTER (hidden behind the loading screen) so flyIntro() can warp in from here.
+// Start distance is capped by the nebula: it's a BackSide sphere of radius 2400,
+// so the camera must stay inside it or the whole backdrop culls away.
+const INTRO_START_DIST = 2200
+
 export function beginIntro(ship) {
   gsap.killTweensOf(camera.position)
   gsap.killTweensOf(camera)
   const dir = mapUnitDir(new THREE.Vector3())
   _lookTarget.copy(ship.group.position)
-  camera.position.copy(ship.group.position).addScaledVector(dir, 1700)
+  camera.position.copy(ship.group.position).addScaledVector(dir, INTRO_START_DIST)
   camera.fov = 96
   camera.updateProjectionMatrix()
   state.cameraMode = 'flight'

@@ -16,8 +16,11 @@ export function initScene(threeScene) {
   scene = threeScene;
 
   // WebGL renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  // Cap the pixel ratio: full Retina (2.0) quadruples the fill cost of the
+  // full-screen nebula shader + bloom vs 1.0 and drops the warp-in below 60fps.
+  // 1.5 is visually indistinguishable at these contrast levels and ~45% cheaper.
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;

@@ -103,7 +103,7 @@ function applyHold(delta) {
   state.shipVelocity.subVectors(_desired, ship.group.position).divideScalar(delta)
   ship.group.position.copy(_desired)
   state.shipPosition.copy(_desired)
-  ship.faceTowards(_bodyWP, dampAlpha(5, delta))   // keep the nose on the body it's orbiting
+  ship.faceTowards(_bodyWP, dampAlpha(4, delta))   // keep the nose on the body it's orbiting
 }
 
 // Place the ship on the path at the current eased progress. Destination tracks
@@ -123,5 +123,5 @@ function applyCruise(delta) {
   state.shipVelocity.subVectors(_desired, ship.group.position).divideScalar(delta)
   ship.group.position.copy(_desired)
   state.shipPosition.copy(_desired)
-  ship.faceTowards(_bodyWP, dampAlpha(13, delta))   // nose stays locked on the destination — flies forward
+  ship.faceTowards(_bodyWP, dampAlpha(10, delta))   // nose stays locked on the destination — flies forward
 }
