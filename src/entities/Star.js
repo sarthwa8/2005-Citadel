@@ -9,9 +9,11 @@ import { makeGlowSprite } from "../core/glow.js";
 // planets are lit without being washed out.
 const SUN_RADIUS = 24;
 
-// Anamorphic lens-streak texture: a bright horizontal bar that fades to nothing at
-// both ends and top/bottom — the signature Mass Effect "star flare across the
-// screen" look. Built once, reused.
+// Anamorphic lens-streak texture: a bright, NARROW horizontal needle whose core
+// tapers to feathered points at both ends and top/bottom — the Mass Effect "star
+// flare across the screen" look. The profiles are deliberately peaked (bright thin
+// core, long soft tails) so the sprite never reads as a solid rectangle; paired
+// with the wide/thin sprite scale below it stays a flare, not a bar. Built once.
 function makeStreakTexture() {
   const w = 512,
     h = 64;
@@ -19,21 +21,33 @@ function makeStreakTexture() {
   c.width = w;
   c.height = h;
   const ctx = c.getContext("2d");
+  // Horizontal: a sharp central spike with long, faint tails feathering to zero.
   const hg = ctx.createLinearGradient(0, 0, w, 0);
   hg.addColorStop(0.0, "rgba(255,255,255,0)");
+  hg.addColorStop(0.18, "rgba(255,255,255,0.03)");
+  hg.addColorStop(0.36, "rgba(255,255,255,0.18)");
+  hg.addColorStop(0.47, "rgba(255,255,255,0.72)");
   hg.addColorStop(0.5, "rgba(255,255,255,1)");
+  hg.addColorStop(0.53, "rgba(255,255,255,0.72)");
+  hg.addColorStop(0.64, "rgba(255,255,255,0.18)");
+  hg.addColorStop(0.82, "rgba(255,255,255,0.03)");
   hg.addColorStop(1.0, "rgba(255,255,255,0)");
   ctx.fillStyle = hg;
   ctx.fillRect(0, 0, w, h);
-  // Multiply by a vertical falloff so it's a thin streak, not a band.
+  // Vertical: a thin bright line through the middle, edges feathering off fast so
+  // the streak is a needle rather than a band.
   ctx.globalCompositeOperation = "destination-in";
   const vg = ctx.createLinearGradient(0, 0, 0, h);
   vg.addColorStop(0.0, "rgba(0,0,0,0)");
+  vg.addColorStop(0.4, "rgba(0,0,0,0.08)");
   vg.addColorStop(0.5, "rgba(0,0,0,1)");
+  vg.addColorStop(0.6, "rgba(0,0,0,0.08)");
   vg.addColorStop(1.0, "rgba(0,0,0,0)");
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, w, h);
-  return new THREE.CanvasTexture(c);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 export class Star {
@@ -65,7 +79,8 @@ export class Star {
         blending: THREE.AdditiveBlending,
       }),
     );
-    this.flare.scale.set(SUN_RADIUS * 4, SUN_RADIUS * 1.2, 1);
+    // Wide + thin (≈11:1) so it reads as a needle-like flare, not a rectangle.
+    this.flare.scale.set(SUN_RADIUS * 8, SUN_RADIUS * 0.72, 1);
     this.flare.renderOrder = 12;
     this.group.add(this.flare);
 
@@ -127,7 +142,8 @@ export class Star {
     this.coronaInner.material.opacity = 0.52 + 0.06 * Math.sin(elapsed * 0.7);
     this.coronaOuter.material.opacity =
       0.2 + 0.04 * Math.sin(elapsed * 0.5 + 1.0);
-    // Lens flare shimmer
-    this.flare.material.opacity = 0.4 + 0.14 * Math.sin(elapsed * 1.3);
+    // Lens flare shimmer — kept subtle so the thin streak accents the star's limb
+    // rather than dominating it.
+    this.flare.material.opacity = 0.34 + 0.12 * Math.sin(elapsed * 1.3);
   }
 }
